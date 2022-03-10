@@ -555,50 +555,7 @@ public class NGSecretResourceV2 {
   @InternalApi
   public ResponseDTO<List<EncryptedDataDetail>>
   getEncryptionDetails(@NotNull NGAccessWithEncryptionConsumer ngAccessWithEncryptionConsumer) {
-    NGAccess ngAccess = ngAccessWithEncryptionConsumer.getNgAccess();
-    DecryptableEntity decryptableEntity = ngAccessWithEncryptionConsumer.getDecryptableEntity();
-    if (ngAccess == null || decryptableEntity == null) {
-      return ResponseDTO.newResponse(new ArrayList<>());
-    }
-    for (Field field : decryptableEntity.getSecretReferenceFields()) {
-      try {
-        field.setAccessible(true);
-        SecretRefData secretRefData = (SecretRefData) field.get(decryptableEntity);
-        if (!Optional.ofNullable(secretRefData).isPresent() || secretRefData.isNull()) {
-          continue;
-        }
-        Scope secretScope = secretRefData.getScope();
-        SecretResponseWrapper secret =
-            ngSecretService
-                .get(ngAccess.getAccountIdentifier(), getOrgIdentifier(ngAccess.getOrgIdentifier(), secretScope),
-                    getProjectIdentifier(ngAccess.getProjectIdentifier(), secretScope), secretRefData.getIdentifier())
-                .orElse(null);
-        secretPermissionValidator.checkForAccessOrThrow(
-            ResourceScope.of(ngAccess.getAccountIdentifier(),
-                getOrgIdentifier(ngAccess.getOrgIdentifier(), secretScope),
-                getProjectIdentifier(ngAccess.getProjectIdentifier(), secretScope)),
-            Resource.of(SECRET_RESOURCE_TYPE, secretRefData.getIdentifier()), SECRET_ACCESS_PERMISSION,
-            secret != null ? secret.getSecret().getOwner() : null);
-
-      } catch (IllegalAccessException illegalAccessException) {
-        log.error("Error while checking access permission for secret: {}", field, illegalAccessException);
-      }
-    }
     return ResponseDTO.newResponse(encryptedDataService.getEncryptionDetails(
         ngAccessWithEncryptionConsumer.getNgAccess(), ngAccessWithEncryptionConsumer.getDecryptableEntity()));
-  }
-
-  private String getOrgIdentifier(String parentOrgIdentifier, @NotNull Scope scope) {
-    if (scope != Scope.ACCOUNT) {
-      return parentOrgIdentifier;
-    }
-    return null;
-  }
-
-  private String getProjectIdentifier(String parentProjectIdentifier, @NotNull Scope scope) {
-    if (scope == Scope.PROJECT) {
-      return parentProjectIdentifier;
-    }
-    return null;
   }
 }
