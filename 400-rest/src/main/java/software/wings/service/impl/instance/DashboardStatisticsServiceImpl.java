@@ -790,6 +790,9 @@ public class DashboardStatisticsServiceImpl implements DashboardStatisticsServic
       String accountId, String appId, String serviceId, PageRequest<WorkflowExecution> pageRequest) {
     List<CurrentActiveInstances> currentActiveInstances = getCurrentActiveInstances(accountId, appId, serviceId);
     List<DeploymentHistory> deploymentHistoryList = getDeploymentHistory(accountId, appId, serviceId, pageRequest);
+    if (featureFlagService.isEnabled(FeatureName.ARTIFACT_SUMMARY_FROM_SVC_DEF, accountId)) {
+      updateActiveInstanceArtifactDetails(currentActiveInstances, deploymentHistoryList);
+    }
     Service service = serviceResourceService.getWithDetails(appId, serviceId);
     notNullCheck("Service not found", service, USER);
     EntitySummary serviceSummary = getEntitySummary(service.getName(), serviceId, EntityType.SERVICE.name());
@@ -798,6 +801,19 @@ public class DashboardStatisticsServiceImpl implements DashboardStatisticsServic
         .currentActiveInstancesList(currentActiveInstances)
         .deploymentHistoryList(deploymentHistoryList)
         .build();
+  }
+
+  public void updateActiveInstanceArtifactDetails(
+      List<CurrentActiveInstances> currentActiveInstances, List<DeploymentHistory> deploymentHistoryList) {
+    for (CurrentActiveInstances instance : currentActiveInstances) {
+      for (DeploymentHistory deploymentHistory : deploymentHistoryList) {
+        if (instance.getLastWorkflowExecution().getId().equals(deploymentHistory.getWorkflow().getId())
+            && instance.getLastWorkflowExecutionDate().equals(deploymentHistory.getDeployedAt())) {
+          instance.setArtifact(deploymentHistory.getArtifact());
+          break;
+        }
+      }
+    }
   }
 
   @VisibleForTesting
