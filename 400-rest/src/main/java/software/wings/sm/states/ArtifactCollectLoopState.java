@@ -47,11 +47,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import lombok.Getter;
+import lombok.experimental.FieldNameConstants;
 import org.mongodb.morphia.annotations.Transient;
 import org.mongodb.morphia.query.Query;
 import org.mongodb.morphia.query.UpdateOperations;
 
 @OwnedBy(HarnessTeam.CDC)
+@FieldNameConstants(innerTypeName = "ArtifactCollectLoopStateKeys")
 public class ArtifactCollectLoopState extends State {
   @Getter List<ArtifactInput> artifactInputList;
 

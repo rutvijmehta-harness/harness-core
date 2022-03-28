@@ -73,6 +73,7 @@ import static software.wings.sm.InstanceStatusSummary.InstanceStatusSummaryBuild
 import static software.wings.sm.StateType.APPROVAL;
 import static software.wings.sm.StateType.APPROVAL_RESUME;
 import static software.wings.sm.StateType.ARTIFACT_COLLECTION;
+import static software.wings.sm.StateType.ARTIFACT_COLLECT_LOOP_STATE;
 import static software.wings.sm.StateType.AZURE_WEBAPP_SLOT_SETUP;
 import static software.wings.sm.StateType.CUSTOM_DEPLOYMENT_FETCH_INSTANCES;
 import static software.wings.sm.StateType.ENV_LOOP_RESUME_STATE;
@@ -82,6 +83,7 @@ import static software.wings.sm.StateType.ENV_STATE;
 import static software.wings.sm.StateType.PCF_RESIZE;
 import static software.wings.sm.StateType.PHASE;
 import static software.wings.sm.StateType.PHASE_STEP;
+import static software.wings.sm.states.ArtifactCollectLoopState.ArtifactCollectLoopStateKeys;
 
 import static io.fabric8.utils.Lists.isNullOrEmpty;
 import static java.lang.String.format;
@@ -193,6 +195,7 @@ import software.wings.beans.ArtifactVariable;
 import software.wings.beans.AwsLambdaExecutionSummary;
 import software.wings.beans.Base;
 import software.wings.beans.BuildExecutionSummary;
+import software.wings.beans.CanaryOrchestrationWorkflow;
 import software.wings.beans.CanaryWorkflowExecutionAdvisor;
 import software.wings.beans.CollectionEntityType;
 import software.wings.beans.ContainerInfrastructureMapping;
@@ -212,7 +215,9 @@ import software.wings.beans.HelmExecutionSummary;
 import software.wings.beans.InfrastructureMapping;
 import software.wings.beans.ManifestVariable;
 import software.wings.beans.NameValuePair;
+import software.wings.beans.OrchestrationWorkflow;
 import software.wings.beans.ParallelInfo;
+import software.wings.beans.PhaseStep;
 import software.wings.beans.Pipeline;
 import software.wings.beans.Pipeline.PipelineKeys;
 import software.wings.beans.PipelineExecution;
@@ -238,6 +243,7 @@ import software.wings.beans.alert.DeploymentRateApproachingLimitAlert;
 import software.wings.beans.alert.UsageLimitExceededAlert;
 import software.wings.beans.appmanifest.HelmChart;
 import software.wings.beans.artifact.Artifact;
+import software.wings.beans.artifact.ArtifactInput;
 import software.wings.beans.artifact.ArtifactStream;
 import software.wings.beans.baseline.WorkflowExecutionBaseline;
 import software.wings.beans.baseline.WorkflowExecutionBaseline.WorkflowExecutionBaselineKeys;
@@ -1498,6 +1504,16 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
     if (isNotEmpty(executionArgs.getWorkflowVariables())) {
       stdParams.setWorkflowVariables(executionArgs.getWorkflowVariables());
     }
+    if (containArtifactInputs(executionArgs)) {
+      List<ArtifactInput> artifactInputs = executionArgs.getArtifactVariables()
+                                               .stream()
+                                               .filter(artifactVariable -> artifactVariable.getArtifactInput() != null)
+                                               .map(ArtifactVariable::getArtifactInput)
+                                               .collect(toList());
+      if (isNotEmpty(artifactInputs)) {
+        stdParams.setArtifactInputs(artifactInputs);
+      }
+    }
     // Setting  exclude hosts with same artifact
     stdParams.setExcludeHostsWithSameArtifact(executionArgs.isExcludeHostsWithSameArtifact());
     stdParams.setNotifyTriggeredUserOnly(executionArgs.isNotifyTriggeredUserOnly());
@@ -1671,6 +1687,14 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
     workflow.setOrchestrationWorkflow(
         workflowConcurrencyHelper.enhanceWithConcurrencySteps(workflow, executionArgs.getWorkflowVariables()));
 
+    List<ArtifactInput> artifactInputs = null;
+    if (containArtifactInputs(executionArgs)) {
+      artifactInputs = getArtifactInputsForWorkflow(executionArgs, workflow);
+      if (isNotEmpty(artifactInputs)) {
+        workflow.setOrchestrationWorkflow(updateWorkflowWithArtifactCollectionSteps(workflow, artifactInputs));
+      }
+    }
+
     if (isEmpty(workflow.getAccountId())) {
       workflow.setAccountId(accountId);
     }
@@ -1694,8 +1718,70 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
     WorkflowStandardParams stdParams =
         workflowExecutionServiceHelper.obtainWorkflowStandardParams(appId, envId, executionArgs, workflow);
 
+    if (isNotEmpty(artifactInputs)) {
+      stdParams.setArtifactInputs(artifactInputs);
+    }
+
     return triggerExecution(workflowExecution, stateMachine, new CanaryWorkflowExecutionAdvisor(),
         workflowExecutionUpdate, stdParams, trigger, null, workflow);
+  }
+
+  private OrchestrationWorkflow updateWorkflowWithArtifactCollectionSteps(
+      Workflow workflow, List<ArtifactInput> artifactInputs) {
+    CanaryOrchestrationWorkflow canaryOrchestrationWorkflow =
+        (CanaryOrchestrationWorkflow) workflow.getOrchestrationWorkflow();
+
+    PhaseStep preDeploymentSteps = canaryOrchestrationWorkflow.getPreDeploymentSteps();
+    if (preDeploymentSteps == null) {
+      preDeploymentSteps = new PhaseStep();
+      canaryOrchestrationWorkflow.setPreDeploymentSteps(preDeploymentSteps);
+    }
+    if (preDeploymentSteps.getSteps() == null) {
+      preDeploymentSteps.setSteps(new ArrayList<>());
+    }
+
+    preDeploymentSteps.getSteps().add(0, getArtifactCollectionStep(artifactInputs));
+    canaryOrchestrationWorkflow.setGraph(canaryOrchestrationWorkflow.generateGraph());
+  }
+
+  private GraphNode getArtifactCollectionStep(List<ArtifactInput> artifactInputs) {
+    return GraphNode.builder()
+        .type(ARTIFACT_COLLECT_LOOP_STATE.getType())
+        .name("Artifact Collection")
+        .properties(ImmutableMap.<String, Object>builder()
+                        .put(ArtifactCollectLoopStateKeys.artifactInputList, artifactInputs)
+                        .build())
+        .build();
+  }
+
+  private List<ArtifactInput> getArtifactInputsForWorkflow(@NotNull ExecutionArgs executionArgs, Workflow workflow) {
+    List<ArtifactInput> artifactInputs = new ArrayList<>();
+    List<Service> services = workflowService.getResolvedServices(workflow, executionArgs.getWorkflowVariables());
+    if (isNotEmpty(services)) {
+      Set<String> serviceIds = services.stream().map(Service::getUuid).collect(toSet());
+      Set<String> artifactStreamIds = new HashSet<>();
+      serviceIds.forEach(serviceId -> {
+        List<String> ids = artifactStreamServiceBindingService.listArtifactStreamIds(serviceId);
+        if (isNotEmpty(ids)) {
+          artifactStreamIds.addAll(ids);
+        }
+      });
+      artifactInputs =
+          executionArgs.getArtifactVariables()
+              .stream()
+              .filter(artifactVariable
+                  -> artifactVariable.getArtifactInput() != null
+                      && artifactStreamIds.contains(artifactVariable.getArtifactInput().getArtifactStreamId()))
+              .map(ArtifactVariable::getArtifactInput)
+              .collect(Collectors.toList());
+    }
+    return artifactInputs;
+  }
+
+  private boolean containArtifactInputs(ExecutionArgs executionArgs) {
+    return executionArgs.getArtifactVariables() != null
+        && executionArgs.getArtifactVariables().stream().anyMatch(
+            artifactVariable -> artifactVariable.getArtifactInput() != null);
   }
 
   private List<String> getWorkflowServiceIds(Workflow workflow) {
