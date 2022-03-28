@@ -1742,6 +1742,7 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
 
     preDeploymentSteps.getSteps().add(0, getArtifactCollectionStep(artifactInputs));
     canaryOrchestrationWorkflow.setGraph(canaryOrchestrationWorkflow.generateGraph());
+    return canaryOrchestrationWorkflow;
   }
 
   private GraphNode getArtifactCollectionStep(List<ArtifactInput> artifactInputs) {
