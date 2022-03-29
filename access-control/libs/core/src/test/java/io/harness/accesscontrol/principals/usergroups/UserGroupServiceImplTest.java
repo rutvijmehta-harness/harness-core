@@ -15,6 +15,7 @@ import static org.mockito.Mockito.when;
 import io.harness.accesscontrol.AccessControlCoreTestBase;
 import io.harness.accesscontrol.principals.usergroups.persistence.UserGroupDao;
 import io.harness.accesscontrol.roleassignments.RoleAssignmentService;
+import io.harness.accesscontrol.scopes.core.ScopeService;
 import io.harness.annotations.dev.OwnedBy;
 import io.harness.category.element.UnitTests;
 import io.harness.exception.InvalidRequestException;
@@ -34,12 +35,14 @@ public class UserGroupServiceImplTest extends AccessControlCoreTestBase {
   private RoleAssignmentService roleAssignmentService;
   private TransactionTemplate transactionTemplate;
   private UserGroupService userGroupService;
+  private ScopeService scopeService;
 
   @Before
   public void setup() {
     userGroupDao = mock(UserGroupDao.class);
     roleAssignmentService = mock(RoleAssignmentService.class);
     transactionTemplate = mock(TransactionTemplate.class);
+    scopeService = mock(ScopeService.class);
     userGroupService =
         spy(new UserGroupServiceImpl(userGroupDao, roleAssignmentService, scopeService, transactionTemplate));
   }
