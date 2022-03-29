@@ -97,6 +97,9 @@ public class ArtifactCollectLoopState extends State {
       childStateExecutionInstance.setLoopedStateParams(getLoopStateParams(artifactInput, stateName));
       childStateExecutionInstance.setStateType(StateType.ARTIFACT_COLLECTION.getName());
       childStateExecutionInstance.setNotifyId(element.getUuid());
+
+      // Check if this causes any issues.
+      childStateExecutionInstance.setChildStateMachineId(null);
       executionResponseBuilder.stateExecutionInstance(childStateExecutionInstance);
       correlationIds.add(element.getUuid());
       forkStateExecutionData.getElements().add(childStateExecutionInstance.getContextElement().getName());
@@ -143,6 +146,21 @@ public class ArtifactCollectLoopState extends State {
     }
     StateExecutionInstance stateExecutionInstance = context.getStateExecutionInstance();
     addArtifactsToWorkflowExecution(appId, workflowExecutionId, artifacts);
+    addArtifactsToStateExecutionInstance(appId, stateExecutionInstance, artifacts);
+    // need to add artifact to parent stateExecutionInstance so that it gets transferred to all the other phases in
+    // workflow.
+    addArtifactsToParentStateExecutionInstance(appId, stateExecutionInstance.getParentInstanceId(), artifacts);
+  }
+
+  private void addArtifactsToParentStateExecutionInstance(
+      String appId, String stateExecutionInstanceId, List<Artifact> artifacts) {
+    StateExecutionInstance stateExecutionInstance = wingsPersistence.createQuery(StateExecutionInstance.class)
+                                                        .filter(StateExecutionInstanceKeys.appId, appId)
+                                                        .filter(ID_KEY, stateExecutionInstanceId)
+                                                        .project(StateExecutionInstanceKeys.contextElements, true)
+                                                        .project(StateExecutionInstanceKeys.uuid, true)
+                                                        .get();
+
     addArtifactsToStateExecutionInstance(appId, stateExecutionInstance, artifacts);
   }
 

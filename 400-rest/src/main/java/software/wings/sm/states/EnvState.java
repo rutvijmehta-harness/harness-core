@@ -181,7 +181,7 @@ public class EnvState extends State implements WorkflowState {
     DeploymentExecutionContext deploymentExecutionContext = (DeploymentExecutionContext) context;
     List<Artifact> artifacts = deploymentExecutionContext.getArtifacts();
     List<ArtifactVariable> artifactVariables = getArtifactVariables(deploymentExecutionContext, workflowStandardParams);
-    addArtifactInputsToArtifactVariables(artifactVariables, workflowStandardParams);
+    artifactVariables.addAll(getArtifactVariablesFromArtifactInputs(workflowStandardParams));
 
     ExecutionArgs executionArgs = new ExecutionArgs();
     executionArgs.setWorkflowType(WorkflowType.ORCHESTRATION);
@@ -243,18 +243,15 @@ public class EnvState extends State implements WorkflowState {
     }
   }
 
-  private void addArtifactInputsToArtifactVariables(
-      List<ArtifactVariable> artifactVariables, WorkflowStandardParams workflowStandardParams) {
+  private List<ArtifactVariable> getArtifactVariablesFromArtifactInputs(WorkflowStandardParams workflowStandardParams) {
     if (isEmpty(workflowStandardParams.getArtifactInputs())) {
-      return;
+      return new ArrayList<>();
     }
-    if (isEmpty(artifactVariables)) {
-      artifactVariables = new ArrayList<>();
-    }
-    artifactVariables.addAll(workflowStandardParams.getArtifactInputs()
-                                 .stream()
-                                 .map(artifactInput -> ArtifactVariable.builder().artifactInput(artifactInput).build())
-                                 .collect(toList()));
+
+    return workflowStandardParams.getArtifactInputs()
+        .stream()
+        .map(artifactInput -> ArtifactVariable.builder().artifactInput(artifactInput).build())
+        .collect(toList());
   }
 
   private Map<String, String> getPlaceHolderValues(ExecutionContext context) {
