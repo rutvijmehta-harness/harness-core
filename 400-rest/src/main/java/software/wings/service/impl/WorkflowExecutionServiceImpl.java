@@ -27,6 +27,7 @@ import static io.harness.beans.ExecutionStatus.SUCCESS;
 import static io.harness.beans.ExecutionStatus.WAITING;
 import static io.harness.beans.ExecutionStatus.activeStatuses;
 import static io.harness.beans.ExecutionStatus.isActiveStatus;
+import static io.harness.beans.FeatureName.DISABLE_ARTIFACT_COLLECTION;
 import static io.harness.beans.FeatureName.HELM_CHART_AS_ARTIFACT;
 import static io.harness.beans.FeatureName.NEW_DEPLOYMENT_FREEZE;
 import static io.harness.beans.FeatureName.PIPELINE_PER_ENV_DEPLOYMENT_PERMISSION;
@@ -1504,7 +1505,7 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
     if (isNotEmpty(executionArgs.getWorkflowVariables())) {
       stdParams.setWorkflowVariables(executionArgs.getWorkflowVariables());
     }
-    if (containArtifactInputs(executionArgs)) {
+    if (containArtifactInputs(executionArgs, accountId)) {
       List<ArtifactInput> artifactInputs = executionArgs.getArtifactVariables()
                                                .stream()
                                                .filter(artifactVariable -> artifactVariable.getArtifactInput() != null)
@@ -1688,7 +1689,7 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
         workflowConcurrencyHelper.enhanceWithConcurrencySteps(workflow, executionArgs.getWorkflowVariables()));
 
     List<ArtifactInput> artifactInputs = null;
-    if (containArtifactInputs(executionArgs)) {
+    if (containArtifactInputs(executionArgs, accountId)) {
       artifactInputs = getArtifactInputsForWorkflow(executionArgs, workflow);
       if (isNotEmpty(artifactInputs)) {
         workflow.setOrchestrationWorkflow(updateWorkflowWithArtifactCollectionSteps(workflow, artifactInputs));
@@ -1779,8 +1780,9 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
     return artifactInputs;
   }
 
-  private boolean containArtifactInputs(ExecutionArgs executionArgs) {
-    return executionArgs.getArtifactVariables() != null
+  private boolean containArtifactInputs(ExecutionArgs executionArgs, String accountId) {
+    return featureFlagService.isEnabled(DISABLE_ARTIFACT_COLLECTION, accountId)
+        && executionArgs.getArtifactVariables() != null
         && executionArgs.getArtifactVariables().stream().anyMatch(
             artifactVariable -> artifactVariable.getArtifactInput() != null);
   }
