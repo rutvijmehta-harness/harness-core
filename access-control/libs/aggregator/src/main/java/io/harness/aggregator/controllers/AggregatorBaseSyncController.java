@@ -121,7 +121,7 @@ public abstract class AggregatorBaseSyncController implements Runnable {
         roleAssignmentRepository, resourceGroupRepository, aggregatorJobType.name(), changeConsumerService);
     ChangeConsumer<UserGroupDBO> userGroupChangeConsumer =
         new UserGroupChangeConsumerImpl(aclRepository, roleAssignmentRepository, userGroupRepository,
-            aggregatorJobType.name(), changeConsumerService, userGroupCRUDEventHandler);
+            aggregatorJobType.name(), changeConsumerService, scopeService, userGroupCRUDEventHandler);
     collectionToConsumerMap = new HashMap<>();
     collectionToConsumerMap.put(ROLE_ASSIGNMENTS, roleAssignmentChangeConsumer);
     collectionToConsumerMap.put(ROLES, roleChangeConsumer);

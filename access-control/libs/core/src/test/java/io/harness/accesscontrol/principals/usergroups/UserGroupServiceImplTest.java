@@ -47,7 +47,8 @@ public class UserGroupServiceImplTest extends AccessControlCoreTestBase {
     userGroupDao = mock(UserGroupDao.class);
     roleAssignmentService = mock(RoleAssignmentService.class);
     transactionTemplate = mock(TransactionTemplate.class);
-    userGroupService = spy(new UserGroupServiceImpl(userGroupDao, roleAssignmentService, transactionTemplate));
+    userGroupService =
+        spy(new UserGroupServiceImpl(userGroupDao, roleAssignmentService, scopeService, transactionTemplate));
   }
 
   @Test
