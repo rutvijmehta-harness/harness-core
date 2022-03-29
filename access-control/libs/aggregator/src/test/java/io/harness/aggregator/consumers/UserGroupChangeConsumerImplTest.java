@@ -36,6 +36,8 @@ import io.harness.accesscontrol.roleassignments.persistence.RoleAssignmentDBO.Ro
 import io.harness.accesscontrol.roleassignments.persistence.repositories.RoleAssignmentRepository;
 import io.harness.accesscontrol.roles.Role;
 import io.harness.accesscontrol.roles.RoleService;
+import io.harness.accesscontrol.scopes.TestScopeLevels;
+import io.harness.accesscontrol.scopes.core.Scope;
 import io.harness.accesscontrol.scopes.core.ScopeService;
 import io.harness.aggregator.AggregatorTestBase;
 import io.harness.aggregator.controllers.AggregatorBaseSyncController.AggregatorJobType;
@@ -50,6 +52,7 @@ import io.serializer.HObjectMapper;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.regex.Pattern;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -65,6 +68,7 @@ public class UserGroupChangeConsumerImplTest extends AggregatorTestBase {
   private ScopeService scopeService;
   private UserGroupChangeConsumerImpl userGroupChangeConsumer;
   private RoleAssignmentChangeConsumerImpl roleAssignmentChangeConsumer;
+  private String testScopeIdentifier;
   private String scopeIdentifier;
   private Role role;
   private ResourceGroup resourceGroup;
@@ -87,7 +91,8 @@ public class UserGroupChangeConsumerImplTest extends AggregatorTestBase {
     roleAssignmentChangeConsumer = new RoleAssignmentChangeConsumerImpl(
         aclRepository, roleAssignmentRepository, changeConsumerService, roleAssignmentCRUDEventHandler);
     aclRepository.cleanCollection();
-    scopeIdentifier = getRandomString(20);
+    testScopeIdentifier = getRandomString(20);
+    scopeIdentifier = "/ACCOUNT/" + testScopeIdentifier;
     role = buildRole(scopeIdentifier);
     resourceGroup = buildResourceGroup(scopeIdentifier);
     when(roleService.get(role.getIdentifier(), role.getScopeIdentifier(), ManagedFilter.NO_FILTER))
@@ -112,6 +117,7 @@ public class UserGroupChangeConsumerImplTest extends AggregatorTestBase {
           Principal.builder()
               .principalType(USER_GROUP)
               .principalIdentifier(userGroupForRoleAssignment.getIdentifier())
+              .principalScopeLevel(TestScopeLevels.TEST_SCOPE.toString())
               .build());
       when(roleAssignmentRepository.findByIdentifierAndScopeIdentifier(
                roleAssignmentDBO.getIdentifier(), roleAssignmentDBO.getScopeIdentifier()))
@@ -122,7 +128,9 @@ public class UserGroupChangeConsumerImplTest extends AggregatorTestBase {
     }
     Criteria criteria = Criteria.where(RoleAssignmentDBOKeys.principalType).is(USER_GROUP);
     criteria.and(RoleAssignmentDBOKeys.principalIdentifier).is(userGroupForRoleAssignment.getIdentifier());
-    criteria.and(RoleAssignmentDBOKeys.scopeIdentifier).is(userGroupForRoleAssignment.getScopeIdentifier());
+    criteria.and(RoleAssignmentDBOKeys.principalScopeLevel).is(TestScopeLevels.TEST_SCOPE.toString());
+    criteria.and(RoleAssignmentDBOKeys.scopeIdentifier)
+        .regex(Pattern.compile("^".concat(userGroupForRoleAssignment.getScopeIdentifier())));
     when(roleAssignmentRepository.findAll(criteria, Pageable.unpaged()))
         .thenReturn(PageTestUtils.getPage(roleAssignmentDBOS, roleAssignmentDBOS.size()));
     return roleAssignmentDBOS;
@@ -143,6 +151,13 @@ public class UserGroupChangeConsumerImplTest extends AggregatorTestBase {
     UserGroupDBO updatedUserGroup = (UserGroupDBO) HObjectMapper.clone(newUserGroup);
     updatedUserGroup.getUsers().add(getRandomString(10));
     mockUserGroupServices(updatedUserGroup);
+    when(scopeService.buildScopeFromScopeIdentifier(scopeIdentifier))
+        .thenReturn(Scope.builder()
+                        .level(TestScopeLevels.TEST_SCOPE)
+                        .parentScope(null)
+                        .instanceId(testScopeIdentifier)
+                        .build());
+
     userGroupChangeConsumer.consumeUpdateEvent(updatedUserGroup.getId(), updatedUserGroup);
     verifyACLs(roleAssignments, role.getPermissions().size(), updatedUserGroup.getUsers().size(),
         resourceGroup.getResourceSelectors().size());
@@ -163,6 +178,12 @@ public class UserGroupChangeConsumerImplTest extends AggregatorTestBase {
     updatedUserGroup.getUsers().add(getRandomString(10));
     updatedUserGroup.getUsers().add(getRandomString(10));
     mockUserGroupServices(updatedUserGroup);
+    when(scopeService.buildScopeFromScopeIdentifier(scopeIdentifier))
+        .thenReturn(Scope.builder()
+                        .level(TestScopeLevels.TEST_SCOPE)
+                        .parentScope(null)
+                        .instanceId(testScopeIdentifier)
+                        .build());
 
     userGroupChangeConsumer.consumeUpdateEvent(updatedUserGroup.getId(), updatedUserGroup);
     verifyACLs(roleAssignments, role.getPermissions().size(), updatedUserGroup.getUsers().size(),
@@ -184,6 +205,12 @@ public class UserGroupChangeConsumerImplTest extends AggregatorTestBase {
     UserGroupDBO updatedUserGroup = (UserGroupDBO) HObjectMapper.clone(newUserGroup);
     updatedUserGroup.getUsers().removeAll(updatedUserGroup.getUsers());
     mockUserGroupServices(updatedUserGroup);
+    when(scopeService.buildScopeFromScopeIdentifier(scopeIdentifier))
+        .thenReturn(Scope.builder()
+                        .level(TestScopeLevels.TEST_SCOPE)
+                        .parentScope(null)
+                        .instanceId(testScopeIdentifier)
+                        .build());
 
     userGroupChangeConsumer.consumeUpdateEvent(updatedUserGroup.getId(), updatedUserGroup);
     verifyACLs(roleAssignments, 0, 0, 0);
