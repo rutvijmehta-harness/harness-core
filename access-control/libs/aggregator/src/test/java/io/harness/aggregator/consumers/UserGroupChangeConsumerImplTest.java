@@ -81,8 +81,9 @@ public class UserGroupChangeConsumerImplTest extends AggregatorTestBase {
     scopeService = mock(ScopeService.class);
     ChangeConsumerService changeConsumerService =
         new ChangeConsumerServiceImpl(roleService, userGroupService, resourceGroupService, scopeService);
-    userGroupChangeConsumer = new UserGroupChangeConsumerImpl(aclRepository, roleAssignmentRepository,
-        userGroupRepository, AggregatorJobType.PRIMARY.name(), changeConsumerService, userGroupCRUDEventHandler);
+    userGroupChangeConsumer =
+        new UserGroupChangeConsumerImpl(aclRepository, roleAssignmentRepository, userGroupRepository,
+            AggregatorJobType.PRIMARY.name(), changeConsumerService, scopeService, userGroupCRUDEventHandler);
     roleAssignmentChangeConsumer = new RoleAssignmentChangeConsumerImpl(
         aclRepository, roleAssignmentRepository, changeConsumerService, roleAssignmentCRUDEventHandler);
     aclRepository.cleanCollection();
