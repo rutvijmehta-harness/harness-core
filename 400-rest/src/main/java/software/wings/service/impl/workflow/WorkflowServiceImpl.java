@@ -206,6 +206,7 @@ import software.wings.beans.appmanifest.LastDeployedHelmChartInformation.LastDep
 import software.wings.beans.appmanifest.ManifestSummary;
 import software.wings.beans.artifact.Artifact;
 import software.wings.beans.artifact.Artifact.ArtifactMetadataKeys;
+import software.wings.beans.artifact.ArtifactInput;
 import software.wings.beans.artifact.ArtifactStream;
 import software.wings.beans.artifact.ArtifactStreamSummary;
 import software.wings.beans.artifact.ArtifactStreamSummary.ArtifactStreamSummaryBuilder;
@@ -2611,6 +2612,9 @@ public class WorkflowServiceImpl implements WorkflowService, DataProvider {
         deploymentMetadataBuilder.artifactVariables(artifactVariables);
         updateArtifactVariables(appId, workflow, artifactVariables, withDefaultArtifact, workflowExecution);
         resolveArtifactStreamMetadata(appId, artifactVariables, workflowExecution);
+        if (featureFlagService.isEnabled(FeatureName.DISABLE_ARTIFACT_COLLECTION, accountId)) {
+          addArtifactInputToArtifactVariables(artifactVariables, workflowExecution);
+        }
       }
 
       deploymentMetadataBuilder.artifactRequiredServiceIds(artifactRequiredServiceIds);
@@ -2635,6 +2639,33 @@ public class WorkflowServiceImpl implements WorkflowService, DataProvider {
     }
 
     return deploymentMetadataBuilder.build();
+  }
+
+  private void addArtifactInputToArtifactVariables(
+      List<ArtifactVariable> artifactVariables, WorkflowExecution workflowExecution) {
+    for (ArtifactVariable artifactVariable : artifactVariables) {
+      if (isNotEmpty(artifactVariable.getArtifactStreamSummaries())
+          && artifactVariable.getArtifactStreamSummaries().get(0).getDefaultArtifact() != null) {
+        ArtifactSummary defaultArtifact = artifactVariable.getArtifactStreamSummaries().get(0).getDefaultArtifact();
+        artifactVariable.setArtifactInput(ArtifactInput.builder()
+                                              .artifactStreamId(defaultArtifact.getArtifactStreamId())
+                                              .buildNo(defaultArtifact.getBuildNo())
+                                              .build());
+      } else {
+        List<ArtifactVariable> previousArtifactVariables = workflowExecution.getExecutionArgs().getArtifactVariables();
+        ArtifactVariable foundArtifactVariable =
+            previousArtifactVariables.stream()
+                .filter(previousArtifactVariable
+                    -> artifactVariable.getName().equals(previousArtifactVariable.getName())
+                        && artifactVariable.getEntityType() == previousArtifactVariable.getEntityType()
+                        && artifactVariable.getEntityId().equals(previousArtifactVariable.getEntityId()))
+                .findFirst()
+                .orElse(null);
+        if (foundArtifactVariable != null && foundArtifactVariable.getArtifactInput() != null) {
+          artifactVariable.setArtifactInput(foundArtifactVariable.getArtifactInput());
+        }
+      }
+    }
   }
 
   private String getServiceNameFromCache(Map<String, Service> serviceCache, String serviceId, String appId) {

@@ -1754,6 +1754,7 @@ public class ArtifactStreamServiceImpl implements ArtifactStreamService, DataPro
         .uuid(artifact.getUuid())
         .uiDisplayName(artifact.getUiDisplayName())
         .buildNo(artifact.getBuildNo())
+        .artifactStreamId(artifact.getArtifactStreamId())
         .build();
   }
 }
