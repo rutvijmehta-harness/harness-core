@@ -32,6 +32,13 @@ public class RoleAssignmentFilterValidator
               "RoleAssignment Filter can have either a principal filter or a principal type and principal scope level filter.")
           .addConstraintViolation();
       return false;
+    } else if (value.getPrincipalTypeFilter().isEmpty() && !value.getPrincipalScopeLevelFilter().isEmpty()) {
+      context.disableDefaultConstraintViolation();
+      context
+          .buildConstraintViolationWithTemplate(
+              "RoleAssignment Filter needs a principal type filter for principal scope level filter.")
+          .addConstraintViolation();
+      return false;
     }
     return true;
   }
