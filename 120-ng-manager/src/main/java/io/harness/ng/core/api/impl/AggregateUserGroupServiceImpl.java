@@ -129,6 +129,8 @@ public class AggregateUserGroupServiceImpl implements AggregateUserGroupService 
             .roleFilter(aggregateACLRequest.getRoleFilter())
             .resourceGroupFilter(aggregateACLRequest.getResourceGroupFilter())
             .principalTypeFilter(Collections.singleton(USER_GROUP))
+            .principalScopeLevelFilter(Collections.singleton(
+                ScopeLevel.of(accountIdentifier, orgIdentifier, projectIdentifier).toString().toLowerCase()))
             .build();
 
     Map<String, List<RoleAssignmentMetadataDTO>> userGroupRoleAssignmentsMap =

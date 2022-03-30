@@ -24,11 +24,12 @@ public class RoleAssignmentFilterValidator
 
   @Override
   public boolean isValid(RoleAssignmentFilter value, ConstraintValidatorContext context) {
-    if (!value.getPrincipalFilter().isEmpty() && !value.getPrincipalTypeFilter().isEmpty()) {
+    if (!value.getPrincipalFilter().isEmpty()
+        && (!value.getPrincipalTypeFilter().isEmpty() || !value.getPrincipalScopeLevelFilter().isEmpty())) {
       context.disableDefaultConstraintViolation();
       context
           .buildConstraintViolationWithTemplate(
-              "RoleAssignment Filter can have either a principal filter or a principal type filter.")
+              "RoleAssignment Filter can have either a principal filter or a principal type and principal scope level filter.")
           .addConstraintViolation();
       return false;
     }
