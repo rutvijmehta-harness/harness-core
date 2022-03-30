@@ -35,11 +35,7 @@ import io.harness.gitsync.interceptor.GitEntityUpdateInfoDTO;
 import io.harness.ng.core.dto.ErrorDTO;
 import io.harness.ng.core.dto.FailureDTO;
 import io.harness.ng.core.dto.ResponseDTO;
-import io.harness.ng.core.template.TemplateApplyRequestDTO;
-import io.harness.ng.core.template.TemplateListType;
-import io.harness.ng.core.template.TemplateMergeResponseDTO;
-import io.harness.ng.core.template.TemplateReferenceSummary;
-import io.harness.ng.core.template.TemplateSummaryResponseDTO;
+import io.harness.ng.core.template.*;
 import io.harness.pms.contracts.service.VariableMergeResponseProto;
 import io.harness.pms.contracts.service.VariablesServiceGrpc.VariablesServiceBlockingStub;
 import io.harness.pms.contracts.service.VariablesServiceRequest;
@@ -620,4 +616,13 @@ public class NGTemplateResource {
     return ResponseDTO.newResponse(
         templateReferenceHelper.getNestedTemplateReferences(accountId, orgId, projectId, yaml, false));
   }
+
+  @POST
+  @Path("/refresh")
+  @ApiOperation(value = "", nickname = "refresh")
+  @Hidden
+  public void refresh(@NotNull @QueryParam(NGCommonEntityConstants.ACCOUNT_KEY) @AccountIdentifier String accountId,
+      @QueryParam(NGCommonEntityConstants.ORG_KEY) @OrgIdentifier String orgId,
+      @QueryParam(NGCommonEntityConstants.PROJECT_KEY) @ProjectIdentifier String projectId,
+      @BeanParam GitEntityFindInfoDTO gitEntityBasicInfo, RefreshRequestDTO refreshRequest) {}
 }
