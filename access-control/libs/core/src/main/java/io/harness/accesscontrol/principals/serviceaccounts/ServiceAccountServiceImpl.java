@@ -89,7 +89,6 @@ public class ServiceAccountServiceImpl implements ServiceAccountService {
     return roleAssignmentService.deleteMulti(
         RoleAssignmentFilter.builder()
             .scopeFilter(scopeIdentifier)
-            .includeChildScopes(true)
             .principalFilter(Sets.newHashSet(Principal.builder()
                                                  .principalType(PrincipalType.SERVICE_ACCOUNT)
                                                  .principalIdentifier(identifier)
