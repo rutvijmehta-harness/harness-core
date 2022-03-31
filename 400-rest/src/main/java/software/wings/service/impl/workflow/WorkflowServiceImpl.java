@@ -2612,7 +2612,7 @@ public class WorkflowServiceImpl implements WorkflowService, DataProvider {
         deploymentMetadataBuilder.artifactVariables(artifactVariables);
         updateArtifactVariables(appId, workflow, artifactVariables, withDefaultArtifact, workflowExecution);
         resolveArtifactStreamMetadata(appId, artifactVariables, workflowExecution);
-        if (featureFlagService.isEnabled(FeatureName.DISABLE_ARTIFACT_COLLECTION, accountId)) {
+        if (featureFlagService.isEnabled(FeatureName.DISABLE_ARTIFACT_COLLECTION, accountId) && withDefaultArtifact) {
           addArtifactInputToArtifactVariables(artifactVariables, workflowExecution);
         }
       }
@@ -2651,7 +2651,7 @@ public class WorkflowServiceImpl implements WorkflowService, DataProvider {
                                               .artifactStreamId(defaultArtifact.getArtifactStreamId())
                                               .buildNo(defaultArtifact.getBuildNo())
                                               .build());
-      } else {
+      } else if (workflowExecution != null) {
         List<ArtifactVariable> previousArtifactVariables = workflowExecution.getExecutionArgs().getArtifactVariables();
         ArtifactVariable foundArtifactVariable =
             previousArtifactVariables.stream()
