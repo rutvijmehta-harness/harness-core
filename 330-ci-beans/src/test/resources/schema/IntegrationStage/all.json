@@ -6053,11 +6053,11 @@
     },
     "VmPoolYamlSpec": {
       "type": "object",
-      "required": [
-        "identifier"
-      ],
       "properties": {
         "identifier": {
+          "type": "string"
+        },
+        "name": {
           "type": "string"
         }
       },
