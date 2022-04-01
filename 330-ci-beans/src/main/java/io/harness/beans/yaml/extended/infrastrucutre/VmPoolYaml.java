@@ -38,7 +38,7 @@ public class VmPoolYaml implements VmInfraSpec {
   @NoArgsConstructor
   @AllArgsConstructor
   public static class VmPoolYamlSpec {
-    private String identifier;
+    @Deprecated private String identifier;
     @ApiModelProperty(dataType = STRING_CLASSPATH) private ParameterField<String> name;
   }
 }
