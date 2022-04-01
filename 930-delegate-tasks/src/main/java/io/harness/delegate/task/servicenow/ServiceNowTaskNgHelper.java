@@ -90,6 +90,15 @@ public class ServiceNowTaskNgHelper {
   }
 
   private ServiceNowTaskNGResponse createTicket(ServiceNowTaskNGParameters serviceNowTaskNGParameters) {
+    if (!serviceNowTaskNGParameters.isUseServiceNowTemplate()) {
+      return createTicketWithoutTemplate(serviceNowTaskNGParameters);
+    } else {
+      // todo: create flow for template
+      return ServiceNowTaskNGResponse.builder().build();
+    }
+  }
+
+  private ServiceNowTaskNGResponse createTicketWithoutTemplate(ServiceNowTaskNGParameters serviceNowTaskNGParameters) {
     ServiceNowConnectorDTO serviceNowConnectorDTO = serviceNowTaskNGParameters.getServiceNowConnectorDTO();
     String userName = getUserName(serviceNowConnectorDTO);
     String password = new String(serviceNowConnectorDTO.getPasswordRef().getDecryptedValue());
@@ -129,6 +138,7 @@ public class ServiceNowTaskNgHelper {
   }
 
   private ServiceNowTaskNGResponse updateTicket(ServiceNowTaskNGParameters serviceNowTaskNGParameters) {
+    // todo: update flow for both template and non-template flow here
     return ServiceNowTaskNGResponse.builder().build();
   }
 
