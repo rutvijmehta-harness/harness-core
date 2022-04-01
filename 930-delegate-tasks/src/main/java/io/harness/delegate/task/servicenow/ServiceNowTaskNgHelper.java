@@ -13,6 +13,7 @@ import static io.harness.exception.WingsException.USER;
 import static io.harness.network.Http.getOkHttpClientBuilder;
 
 import io.harness.annotations.dev.OwnedBy;
+import io.harness.data.structure.EmptyPredicate;
 import io.harness.delegate.beans.connector.servicenow.ServiceNowConnectorDTO;
 import io.harness.exception.InvalidRequestException;
 import io.harness.exception.NestedExceptionUtils;
@@ -73,14 +74,96 @@ public class ServiceNowTaskNgHelper {
       case GET_TICKET_CREATE_METADATA:
         return getIssueCreateMetaData(serviceNowTaskNGParameters);
       case GET_TICKET:
-      case CREATE_TICKET:
-      case UPDATE_TICKET:
         return getTicket(serviceNowTaskNGParameters);
+      case CREATE_TICKET:
+        return createTicket(serviceNowTaskNGParameters);
+      case UPDATE_TICKET:
+        return updateTicket(serviceNowTaskNGParameters);
       case GET_METADATA:
         return getMetadata(serviceNowTaskNGParameters);
+      case GET_TEMPLATE:
+        return getTemplateList(serviceNowTaskNGParameters);
       default:
         throw new InvalidRequestException(
             String.format("Invalid servicenow task action: %s", serviceNowTaskNGParameters.getAction()));
+    }
+  }
+
+  private ServiceNowTaskNGResponse createTicket(ServiceNowTaskNGParameters serviceNowTaskNGParameters) {
+    ServiceNowConnectorDTO serviceNowConnectorDTO = serviceNowTaskNGParameters.getServiceNowConnectorDTO();
+    String userName = getUserName(serviceNowConnectorDTO);
+    String password = new String(serviceNowConnectorDTO.getPasswordRef().getDecryptedValue());
+    ServiceNowRestClient serviceNowRestClient = getServiceNowRestClient(serviceNowConnectorDTO.getServiceNowUrl());
+
+    Map<String, String> body = new HashMap<>();
+    // todo: process servicenow fields before client uses these
+    serviceNowTaskNGParameters.getFields().forEach((key, value) -> {
+      if (EmptyPredicate.isNotEmpty(value)) {
+        body.put(key, value);
+      }
+    });
+
+    final Call<JsonNode> request = serviceNowRestClient.createTicket(Credentials.basic(userName, password),
+        serviceNowTaskNGParameters.getTicketType(), "all", "number,sys_id", body);
+    Response<JsonNode> response = null;
+
+    try {
+      log.info("Body of the create issue request made to the ServiceNow server: {}", body);
+      response = request.execute();
+      log.info("Response received from serviceNow: {}", response);
+      handleResponse(response, "Failed to create ServiceNow ticket");
+      JsonNode responseObj = response.body().get("result");
+      String ticketNumber = responseObj.get("number").get("display_value").asText();
+      String ticketSysId = responseObj.get("sys_id").get("display_value").asText();
+      String ticketUrlFromTicketId =
+          ServiceNowUtils.prepareTicketUrlFromTicketNumber(serviceNowConnectorDTO.getServiceNowUrl(),
+              serviceNowTaskNGParameters.getTicketNumber(), serviceNowTaskNGParameters.getTicketType());
+      // todo: add field details from ticket?
+      return ServiceNowTaskNGResponse.builder()
+          .ticket(ServiceNowTicketNG.builder().url(ticketUrlFromTicketId).number(ticketNumber).build())
+          .build();
+    } catch (Exception e) {
+      log.error("Failed to create ServiceNow ticket ");
+      throw new ServiceNowException(ExceptionUtils.getMessage(e), SERVICENOW_ERROR, USER, e);
+    }
+  }
+
+  private ServiceNowTaskNGResponse updateTicket(ServiceNowTaskNGParameters serviceNowTaskNGParameters) {
+    return ServiceNowTaskNGResponse.builder().build();
+  }
+
+  private ServiceNowTaskNGResponse getTemplateList(ServiceNowTaskNGParameters serviceNowTaskNGParameters) {
+    ServiceNowConnectorDTO serviceNowConnectorDTO = serviceNowTaskNGParameters.getServiceNowConnectorDTO();
+    String userName = getUserName(serviceNowConnectorDTO);
+    String password = new String(serviceNowConnectorDTO.getPasswordRef().getDecryptedValue());
+    ServiceNowRestClient serviceNowRestClient = getServiceNowRestClient(serviceNowConnectorDTO.getServiceNowUrl());
+
+    final Call<JsonNode> request = serviceNowRestClient.getMetadata(
+        Credentials.basic(userName, password), serviceNowTaskNGParameters.getTicketType().toLowerCase());
+    Response<JsonNode> response = null;
+    try {
+      response = request.execute();
+      handleResponse(response, "Failed to get serviceNow fields");
+      JsonNode responseObj = response.body().get("result");
+      if (responseObj != null && responseObj.get("columns") != null) {
+        JsonNode columns = responseObj.get("columns");
+        List<ServiceNowFieldNG> fields = new ArrayList<>();
+        for (JsonNode fieldObj : columns) {
+          fields.add(ServiceNowFieldNG.builder()
+                         .name(fieldObj.get("label").textValue())
+                         .key(fieldObj.get("name").textValue())
+                         .allowedValues(buildAllowedValues(fieldObj.get("choices")))
+                         .build());
+        }
+        return ServiceNowTaskNGResponse.builder().serviceNowFieldNGList(fields).build();
+      } else {
+        throw new ServiceNowException("Failed to fetch fields for ticket type "
+                + serviceNowTaskNGParameters.getTicketType() + " response: " + response,
+            SERVICENOW_ERROR, USER);
+      }
+    } catch (Exception e) {
+      log.error("Failed to get serviceNow fields ");
+      throw new ServiceNowException(ExceptionUtils.getMessage(e), SERVICENOW_ERROR, USER, e);
     }
   }
 

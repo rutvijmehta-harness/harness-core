@@ -95,4 +95,15 @@ public interface ServiceNowRestClient {
 
   @GET("api/now/ui/meta/{ticketType}")
   Call<JsonNode> getMetadata(@Header("Authorization") String authorization, @Path("ticketType") String ticketType);
+
+  @GET("/api/now/table/sys_template?{ticketType}")
+  Call<JsonNode> getTemplate(@Header("Authorization") String authorization, @Path("ticketType") String ticketType,
+      @Query("sysparm_query") String query, @Query("sysparm_display_value") String displayValue);
+
+  // Scripted API to list templates
+  @GET("/api/x_harne_harness_ap/template_list")
+  Call<JsonNode> getIssue(@Header("Authorization") String authorization, @Query("ticketType") String ticketType,
+      @Query("page") String page, @Query("limit") String limit, @Query("searchTerm") String searchTerm);
+
+
 }
