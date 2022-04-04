@@ -3707,7 +3707,7 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
         stateMachineExecutor.getExecutionContext(appId, pipelineExecutionId, stateExecutionInstance.getUuid());
 
     WorkflowStandardParams workflowStandardParams = context.getContextElement(ContextElementType.STANDARD);
-    notNullCheck("Couldnt continue thie pipelineStage, might be expired", workflowStandardParams);
+    notNullCheck("Couldn't continue this pipelineStage, might be expired", workflowStandardParams);
     List<Artifact> artifacts = executionArgs.getArtifacts();
     List<ArtifactVariable> artifactVariables = executionArgs.getArtifactVariables();
     if (isNotEmpty(artifactVariables)) {
@@ -3718,7 +3718,10 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
       updateWorkflowExecutionArtifactsAndArtifactVariables(appId, pipelineExecutionId, pipelineExecution.getArtifacts(),
           executionArgs.getArtifacts(), executionArgs.getArtifactVariables());
     }
+    // executionArg.artifactVariables has merged artifact variable list (old + new). Consider the artifact for a service
+    // cannot be overridden once provided, even from runtime inputs screen.
     addParameterizedArtifactVariableToContext(executionArgs.getArtifactVariables(), workflowStandardParams);
+    addArtifactInputsToContext(executionArgs.getArtifactVariables(), workflowStandardParams);
 
     LinkedList<ContextElement> contextElements = stateExecutionInstance.getContextElements();
     contextElements.push(workflowStandardParams);
@@ -3737,6 +3740,19 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
             stateExecutionInstance.getPipelineStageElementId(), stateExecutionInstance.getExecutionUuid()),
         responseData);
     return true;
+  }
+
+  private void addArtifactInputsToContext(
+      List<ArtifactVariable> artifactVariables, WorkflowStandardParams workflowStandardParams) {
+    List<ArtifactInput> artifactInputsFromArtifactVariables =
+        artifactVariables.stream()
+            .filter(artifactVariable -> artifactVariable.getArtifactInput() != null)
+            .map(ArtifactVariable::getArtifactInput)
+            .collect(toList());
+    if (isEmpty(artifactInputsFromArtifactVariables)) {
+      return;
+    }
+    workflowStandardParams.setArtifactInputs(artifactInputsFromArtifactVariables);
   }
 
   @VisibleForTesting
