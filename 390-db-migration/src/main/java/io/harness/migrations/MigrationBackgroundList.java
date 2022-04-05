@@ -131,6 +131,7 @@ import io.harness.migrations.all.TemplateLibraryYamlMigration;
 import io.harness.migrations.all.TerraformIsTemplatizedMigration;
 import io.harness.migrations.all.TimeSeriesThresholdsMigration;
 import io.harness.migrations.all.UpdateAccountEncryptionClassNames;
+import io.harness.migrations.all.UpdateCorruptedInstanceStatsMigration;
 import io.harness.migrations.all.UpdateInstanceInfoWithLastArtifactIdMigration;
 import io.harness.migrations.all.UpdateStaleDefaultAccountIds;
 import io.harness.migrations.all.UpdateWorkflowExecutionAccountId;
@@ -372,6 +373,7 @@ public class MigrationBackgroundList {
         .add(Pair.of(215, AddPipelinesReferenceToUserGroups.class))
         .add(Pair.of(216, BaseMigration.class))
         .add(Pair.of(217, DeleteFailedNgDelegateTokenAuditsMigration.class))
+        .add(Pair.of(218, UpdateCorruptedInstanceStatsMigration.class))
         .build();
   }
 }
