@@ -131,7 +131,7 @@ else
 fi
 
 cp 260-delegate/config-delegate.yml dist/delegate/config-delegate.yml
-if [ ! -z "$SIGNING_REQUIRED" ]; then
+if [ "$BUILD_PURPOSE" == 'RELEASE' ]; then
   echo "INFO: Signing Delegate..."
   jarsigner -tsa http://timestamp.digicert.com -storetype pkcs12 -keystore ${KEY_STORE} -storepass ${KEY_STORE_PASSWORD} dist/delegate/delegate-capsule.jar ${KEY_STORE_ALIAS}
 fi
@@ -140,7 +140,7 @@ cp protocol.info dist/delegate/.
 
 mkdir -p dist/watcher
 cp ${HOME}/.bazel-dirs/bin/960-watcher/module_deploy.jar dist/watcher/watcher-capsule.jar
-if [ ! -z "$SIGNING_REQUIRED" ]; then
+if [ "$BUILD_PURPOSE" == 'RELEASE' ]; then
   echo "INFO: Signing Watcher..."
   jarsigner -tsa http://timestamp.digicert.com -storetype pkcs12 -keystore ${KEY_STORE} -storepass ${KEY_STORE_PASSWORD} dist/watcher/watcher-capsule.jar ${KEY_STORE_ALIAS}
 fi
