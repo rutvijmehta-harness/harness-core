@@ -31,11 +31,8 @@ import software.wings.service.intfc.instance.stats.InstanceStatService;
 import com.google.inject.Inject;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.commons.lang3.StringUtils;
@@ -57,14 +54,10 @@ public class UpdateCorruptedInstanceStatsMigration implements Migration {
                                                        .filter("deploymentType", "HELM")
                                                        .project("accountId", true)
                                                        .project("_id", true);
-    Map<String, Set<String>> affectedAccounts = new HashMap<>();
+    Set<String> affectedAccounts = new HashSet<>();
     try (HIterator<InfrastructureMapping> iterator = new HIterator<>(accountIdsQuery.fetch())) {
       for (InfrastructureMapping mapping : iterator) {
-        if (affectedAccounts.containsKey(mapping.getAccountId())) {
-          affectedAccounts.get(mapping.getAccountId()).add(mapping.getUuid());
-        } else {
-          affectedAccounts.put(mapping.getAccountId(), new HashSet<>(Collections.singleton(mapping.getUuid())));
-        }
+        affectedAccounts.add(mapping.getAccountId());
       }
     } catch (Exception ex) {
       log.error(StringUtils.join(DEBUG_LINE, "Error fetching affected accounts for migration"));
@@ -72,7 +65,7 @@ public class UpdateCorruptedInstanceStatsMigration implements Migration {
 
     Instant to = Instant.now();
 
-    affectedAccounts.keySet().forEach(accountId -> {
+    affectedAccounts.forEach(accountId -> {
       try {
         List<InstanceStatsSnapshot> instanceStats = instanceStatService.aggregate(accountId, FROM, to);
         for (InstanceStatsSnapshot statsSnapshot : instanceStats) {
