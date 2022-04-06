@@ -60,6 +60,7 @@ import org.apache.commons.lang3.StringUtils;
 public class ManifestMigrationService implements NgMigrationService {
   @Inject private ApplicationManifestService applicationManifestService;
   @Inject private MigratorExpressionUtils migratorExpressionUtils;
+  @Inject private NgManifestFactory manifestFactory;
 
   @Override
   public MigratedEntityMapping generateMappingEntity(NGYamlFile yamlFile) {
@@ -137,73 +138,13 @@ public class ManifestMigrationService implements NgMigrationService {
       if (manifestInput != null && manifestInput.getSpec() != null) {
         entitySpec = JsonUtils.treeToValue(manifestInput.getSpec(), ManifestProvidedEntitySpec.class);
       }
-
-      // TODO : move if-else logic to factory pattern
-      if (applicationManifest.getKind() == AppManifestKind.K8S_MANIFEST
-          && applicationManifest.getStoreType() == StoreType.Remote) {
-        // TODO: get store from migrated connector entity
-
-        GitFileConfig gitFileConfig = applicationManifest.getGitFileConfig();
-        NgEntityDetail connector = migratedEntities.get(
-            CgEntityId.builder().id(gitFileConfig.getConnectorId()).type(NGMigrationEntityType.CONNECTOR).build());
-
-        K8sManifest k8sManifest = K8sManifest
-                                      .builder()
-                                      // TODO: There needs to be a logic to build identifier of the manifest
-                                      .identifier(MigratorUtility.generateIdentifier(applicationManifest.getUuid()))
-                                      .skipResourceVersioning(ParameterField.createValueField(
-                                          applicationManifest.getSkipVersioningForAllK8sObjects()))
-                                      .store(ParameterField.createValueField(
-                                          StoreConfigWrapper.builder()
-                                              .type(StoreConfigType.GIT)
-                                              .spec(getGitStore(gitFileConfig, entitySpec, connector.getIdentifier()))
-                                              .build()))
-                                      .build();
-        ManifestConfigWrapper manifestConfigWrapper =
-            ManifestConfigWrapper.builder()
-                .manifest(ManifestConfig.builder()
-                              .identifier(MigratorUtility.generateIdentifier(applicationManifest.getUuid()))
-                              .type(ManifestConfigType.K8_MANIFEST)
-                              .spec(k8sManifest)
-                              .build())
-                .build();
-        ngManifests.add(manifestConfigWrapper);
-      } else if (applicationManifest.getKind() == AppManifestKind.VALUES
-          && applicationManifest.getStoreType() == StoreType.Remote) {
-        GitFileConfig gitFileConfig = applicationManifest.getGitFileConfig();
-        NgEntityDetail connector = migratedEntities.get(
-            CgEntityId.builder().id(gitFileConfig.getConnectorId()).type(NGMigrationEntityType.CONNECTOR).build());
-
-        ValuesManifest valuesManifest =
-            ValuesManifest.builder()
-                .identifier(MigratorUtility.generateIdentifier(applicationManifest.getUuid()))
-                .store(ParameterField.createValueField(
-                    StoreConfigWrapper.builder()
-                        .type(StoreConfigType.GIT)
-                        .spec(getGitStore(gitFileConfig, entitySpec, connector.getIdentifier()))
-                        .build()))
-                .build();
-        ManifestConfigWrapper manifestConfigWrapper =
-            ManifestConfigWrapper.builder()
-                .manifest(ManifestConfig.builder()
-                              .identifier(MigratorUtility.generateIdentifier(applicationManifest.getUuid()))
-                              .type(ManifestConfigType.VALUES)
-                              .spec(valuesManifest)
-                              .build())
-                .build();
-        ngManifests.add(manifestConfigWrapper);
-      } else {
-        throw new UnsupportedOperationException(
-            String.format("Only K8s and Values Manifest with Remote Store Supported. Found- Kind : [%s] Store: [%s]",
-                applicationManifest.getKind(), applicationManifest.getStoreType()));
-      }
+      ngManifests.add(manifestFactory.getManifestConfigWrapper(applicationManifest, migratedEntities, entitySpec));
     }
     return ngManifests;
   }
 
   // TODO: use scoped connectorRef ref
-  private GitStore getGitStore(
-      GitFileConfig gitFileConfig, ManifestProvidedEntitySpec manifestInput, String connectorRef) {
+  GitStore getGitStore(GitFileConfig gitFileConfig, ManifestProvidedEntitySpec manifestInput, String connectorRef) {
     GitStoreBuilder gitStoreBuilder =
         GitStore.builder()
             .branch(ParameterField.createValueField(gitFileConfig.getBranch()))
