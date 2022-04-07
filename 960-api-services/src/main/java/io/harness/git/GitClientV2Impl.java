@@ -23,6 +23,7 @@ import static io.harness.git.Constants.GIT_YAML_LOG_PREFIX;
 import static io.harness.git.Constants.HARNESS_IO_KEY_;
 import static io.harness.git.Constants.HARNESS_SUPPORT_EMAIL_KEY;
 import static io.harness.git.Constants.PATH_DELIMITER;
+import static io.harness.git.Constants.REPOSITORY_GIT_FILE_LOCK;
 import static io.harness.git.model.PushResultGit.pushResultBuilder;
 import static io.harness.govern.Switch.unhandled;
 import static io.harness.validation.Validator.notEmptyCheck;
@@ -70,8 +71,10 @@ import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.UnknownHostException;
+import java.nio.channels.FileLock;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -871,7 +874,9 @@ public class GitClientV2Impl implements GitClientV2 {
     }
 
     synchronized (gitClientHelper.getLockObject(gitConnectorId)) {
-      try {
+      final File interProcessLockFile = (File) gitClientHelper.getLockObject(gitConnectorId);
+      try (FileOutputStream fileOutputStream = new FileOutputStream(interProcessLockFile);
+           FileLock lock = fileOutputStream.getChannel().lock()) {
         log.info(new StringBuilder(128)
                      .append(" Processing Git command: FILES_BETWEEN_COMMITS ")
                      .append("Account: ")
@@ -935,12 +940,13 @@ public class GitClientV2Impl implements GitClientV2 {
   }
 
   @Override
-  public FetchFilesResult fetchFilesByPath(FetchFilesByPathRequest request) {
+  public FetchFilesResult fetchFilesByPath(FetchFilesByPathRequest request) throws IOException {
     cleanup(request);
     validateRequiredArgs(request);
-
     synchronized (gitClientHelper.getLockObject(request.getConnectorId())) {
-      try {
+      File interProcessLockFile = new File(format(REPOSITORY_GIT_FILE_LOCK, request.getConnectorId()));
+      try (FileOutputStream fileOutputStream = new FileOutputStream(interProcessLockFile);
+           FileLock lock = fileOutputStream.getChannel().lock()) {
         checkoutFiles(request);
         List<GitFile> gitFiles = getFilteredGitFiles(request);
         resetWorkingDir(request);
@@ -1011,12 +1017,14 @@ public class GitClientV2Impl implements GitClientV2 {
   }
 
   @Override
-  public void downloadFiles(DownloadFilesRequest request) {
+  public void downloadFiles(DownloadFilesRequest request) throws IOException {
     cleanup(request);
     validateRequiredArgs(request);
 
     synchronized (gitClientHelper.getLockObject(request.getConnectorId())) {
-      try {
+      final File interProcessLockFile = new File(format(REPOSITORY_GIT_FILE_LOCK, request.getConnectorId()));
+      try (FileOutputStream fileOutputStream = new FileOutputStream(interProcessLockFile);
+           FileLock lock = fileOutputStream.getChannel().lock()) {
         checkoutFiles(request);
         String repoPath = gitClientHelper.getFileDownloadRepoDirectory(request);
 
@@ -1090,30 +1098,36 @@ public class GitClientV2Impl implements GitClientV2 {
     }
   }
 
+  // use this method wrapped in inter process file lock ro handle multiple delegate version
   private void checkoutFiles(FetchFilesByPathRequest request) {
     synchronized (gitClientHelper.getLockObject(request.getConnectorId())) {
-      log.info(new StringBuilder(128)
-                   .append(" Processing Git command: FETCH_FILES ")
-                   .append("Account: ")
-                   .append(request.getAccountId())
-                   .append(", repo: ")
-                   .append(request.getRepoUrl())
-                   .append(request.useBranch() ? ", Branch: " : ", CommitId: ")
-                   .append(request.useBranch() ? request.getBranch() : request.getCommitId())
-                   .append(", filePaths: ")
-                   .append(request.getFilePaths())
-                   .toString());
+      try {
+        log.info(new StringBuilder(128)
+                     .append(" Processing Git command: FETCH_FILES ")
+                     .append("Account: ")
+                     .append(request.getAccountId())
+                     .append(", repo: ")
+                     .append(request.getRepoUrl())
+                     .append(request.useBranch() ? ", Branch: " : ", CommitId: ")
+                     .append(request.useBranch() ? request.getBranch() : request.getCommitId())
+                     .append(", filePaths: ")
+                     .append(request.getFilePaths())
+                     .toString());
 
-      gitClientHelper.createDirStructureForFileDownload(request);
+        gitClientHelper.createDirStructureForFileDownload(request);
 
-      // clone repo locally without checkout
-      cloneRepoForFilePathCheckout(request);
+        // clone repo locally without checkout
+        cloneRepoForFilePathCheckout(request);
 
-      // if useBranch is set, use it to checkout latest, else checkout given commitId
-      if (request.useBranch()) {
-        checkoutBranchForPath(request);
-      } else {
-        checkoutGivenCommitForPath(request);
+        // if useBranch is set, use it to checkout latest, else checkout given commitId
+        if (request.useBranch()) {
+          checkoutBranchForPath(request);
+        } else {
+          checkoutGivenCommitForPath(request);
+        }
+      } catch (Exception ex) {
+        // just to keep the exception handling behaviour same as before
+        throw ex;
       }
     }
   }

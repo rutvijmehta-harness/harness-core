@@ -8,6 +8,7 @@
 package io.harness.git;
 
 import static io.harness.annotations.dev.HarnessTeam.CDP;
+import static io.harness.filesystem.FileIo.createDirectoryIfDoesNotExist;
 import static io.harness.git.model.ChangeType.ADD;
 import static io.harness.git.model.ChangeType.DELETE;
 import static io.harness.git.model.ChangeType.RENAME;
@@ -16,6 +17,7 @@ import static io.harness.rule.OwnerRule.ABHINAV;
 import static io.harness.rule.OwnerRule.ARVIND;
 import static io.harness.rule.OwnerRule.YOGESH;
 
+import static java.lang.String.format;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -51,6 +53,9 @@ import io.harness.git.model.GitFileChange;
 import io.harness.git.model.PushResultGit;
 import io.harness.rule.Owner;
 
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
 import java.io.File;
 import java.io.IOException;
 import java.net.UnknownHostException;
@@ -97,6 +102,20 @@ import org.zeroturnaround.exec.stream.LogOutputStream;
 public class GitClientV2ImplTest extends CategoryTest {
   private static final String USERNAME = "USERNAME";
   private static final String PASSWORD = "PASSWORD";
+  private static final String INTER_PROCESS_LOCK_FILE = "./repository/gitFileDownloads/%s/interProcessFileLock";
+  private static final String REPO_GIT_DOWNLOAD_DIR = "./repository/gitFileDownloads/%s";
+  private static final String CONNECTOR_ID = "CONNECTOR_ID";
+
+  private static final LoadingCache<String, Object> cache =
+      CacheBuilder.newBuilder()
+          .maximumSize(2000)
+          .expireAfterAccess(1, TimeUnit.HOURS)
+          .build(new CacheLoader<String, Object>() {
+            @Override
+            public Object load(String key) throws Exception {
+              return new File(format(INTER_PROCESS_LOCK_FILE, key));
+            }
+          });
   @Rule public MockitoRule mockitoRule = MockitoJUnit.rule();
   @Mock GitClientHelper gitClientHelper;
   @InjectMocks @Spy GitClientV2Impl gitClient;
@@ -109,6 +128,9 @@ public class GitClientV2ImplTest extends CategoryTest {
     createRepo(repoPath, false);
     git = Git.open(new File(repoPath));
     doReturn("").when(gitClientHelper).getGitLogMessagePrefix(any());
+    createDirectoryIfDoesNotExist(format(REPO_GIT_DOWNLOAD_DIR, CONNECTOR_ID));
+    File indexLockFile = new File(format(INTER_PROCESS_LOCK_FILE, CONNECTOR_ID));
+    indexLockFile.createNewFile();
   }
 
   @Test
@@ -250,7 +272,7 @@ public class GitClientV2ImplTest extends CategoryTest {
                                        .repoUrl(repoPath)
                                        .authRequest(new UsernamePasswordAuthRequest(USERNAME, PASSWORD.toCharArray()))
                                        .branch("master")
-                                       .connectorId("CONNECTOR_ID")
+                                       .connectorId(CONNECTOR_ID)
                                        .accountId("ACCOUNT_ID")
                                        .destinationDirectory("./")
                                        .build();
@@ -258,7 +280,8 @@ public class GitClientV2ImplTest extends CategoryTest {
         .isInstanceOf(InvalidRequestException.class)
         .hasMessageContaining("FilePaths can not be empty");
     request.setFilePaths(Collections.singletonList("./"));
-    doReturn("").when(gitClientHelper).getLockObject(request.getConnectorId());
+    doReturn(cache.get(CONNECTOR_ID)).when(gitClientHelper).getLockObject(request.getConnectorId());
+
     doNothing().when(gitClientHelper).createDirStructureForFileDownload(any());
     doReturn(repoPath).when(gitClientHelper).getFileDownloadRepoDirectory(any());
     addRemote(repoPath);
@@ -274,7 +297,7 @@ public class GitClientV2ImplTest extends CategoryTest {
                                        .repoUrl(repoPath)
                                        .authRequest(new UsernamePasswordAuthRequest(USERNAME, PASSWORD.toCharArray()))
                                        .branch("master")
-                                       .connectorId("CONNECTOR_ID")
+                                       .connectorId(CONNECTOR_ID)
                                        .accountId("ACCOUNT_ID")
                                        .destinationDirectory(destinationDirectory)
                                        .build();
@@ -284,6 +307,7 @@ public class GitClientV2ImplTest extends CategoryTest {
 
     request.setFilePaths(Collections.singletonList("./base.txt"));
     doReturn("").when(gitClientHelper).getLockObject(request.getConnectorId());
+
     doNothing().when(gitClientHelper).createDirStructureForFileDownload(any());
     doReturn(repoPath).when(gitClientHelper).getFileDownloadRepoDirectory(any());
     gitClient.downloadFiles(request);
@@ -302,7 +326,7 @@ public class GitClientV2ImplTest extends CategoryTest {
                                        .repoUrl(repoPath)
                                        .authRequest(new UsernamePasswordAuthRequest(USERNAME, PASSWORD.toCharArray()))
                                        .commitId("t1")
-                                       .connectorId("CONNECTOR_ID")
+                                       .connectorId(CONNECTOR_ID)
                                        .accountId("ACCOUNT_ID")
                                        .destinationDirectory("./")
                                        .build();
@@ -310,7 +334,8 @@ public class GitClientV2ImplTest extends CategoryTest {
         .isInstanceOf(InvalidRequestException.class)
         .hasMessageContaining("FilePaths can not be empty");
     request.setFilePaths(Collections.singletonList("./"));
-    doReturn("").when(gitClientHelper).getLockObject(request.getConnectorId());
+    doReturn(cache.get(CONNECTOR_ID)).when(gitClientHelper).getLockObject(request.getConnectorId());
+
     doNothing().when(gitClientHelper).createDirStructureForFileDownload(any());
     doReturn(repoPath).when(gitClientHelper).getFileDownloadRepoDirectory(any());
     addRemote(repoPath);
@@ -326,7 +351,7 @@ public class GitClientV2ImplTest extends CategoryTest {
                                        .repoUrl(repoPath)
                                        .authRequest(new UsernamePasswordAuthRequest(USERNAME, PASSWORD.toCharArray()))
                                        .branch("master")
-                                       .connectorId("CONNECTOR_ID")
+                                       .connectorId(CONNECTOR_ID)
                                        .accountId("ACCOUNT_ID")
                                        .destinationDirectory("./")
                                        .build();
@@ -334,7 +359,7 @@ public class GitClientV2ImplTest extends CategoryTest {
         .isInstanceOf(InvalidRequestException.class)
         .hasMessageContaining("FilePaths can not be empty");
     request.setFilePaths(Collections.singletonList("./"));
-    doReturn("").when(gitClientHelper).getLockObject(request.getConnectorId());
+    doReturn(cache.get(CONNECTOR_ID)).when(gitClientHelper).getLockObject(request.getConnectorId());
     doNothing().when(gitClientHelper).createDirStructureForFileDownload(any());
     doReturn(repoPath).when(gitClientHelper).getFileDownloadRepoDirectory(any());
 
@@ -349,7 +374,7 @@ public class GitClientV2ImplTest extends CategoryTest {
         FetchFilesByPathRequest.builder()
             .repoUrl(repoPath)
             .authRequest(new UsernamePasswordAuthRequest(USERNAME, PASSWORD.toCharArray()))
-            .connectorId("CONNECTOR_ID")
+            .connectorId(CONNECTOR_ID)
             .accountId("ACCOUNT_ID")
             .build();
     assertThatThrownBy(() -> gitClient.fetchFilesByPath(request))
@@ -360,7 +385,8 @@ public class GitClientV2ImplTest extends CategoryTest {
         .isInstanceOf(InvalidRequestException.class)
         .hasMessageContaining("No refs provided to checkout");
     request.setBranch("master");
-    doReturn("").when(gitClientHelper).getLockObject(request.getConnectorId());
+    doReturn(cache.get(CONNECTOR_ID)).when(gitClientHelper).getLockObject(request.getConnectorId());
+
     doNothing().when(gitClientHelper).createDirStructureForFileDownload(any());
     doReturn(repoPath).when(gitClientHelper).getFileDownloadRepoDirectory(any());
 
@@ -375,12 +401,13 @@ public class GitClientV2ImplTest extends CategoryTest {
         FetchFilesByPathRequest.builder()
             .repoUrl(repoPath)
             .authRequest(new UsernamePasswordAuthRequest(USERNAME, PASSWORD.toCharArray()))
-            .connectorId("CONNECTOR_ID")
+            .connectorId(CONNECTOR_ID)
             .accountId("ACCOUNT_ID")
             .build();
     request.setFilePaths(Collections.singletonList("./"));
     request.setBranch("master");
-    doReturn("").when(gitClientHelper).getLockObject(request.getConnectorId());
+    doReturn(cache.get(CONNECTOR_ID)).when(gitClientHelper).getLockObject(request.getConnectorId());
+
     doNothing().when(gitClientHelper).createDirStructureForFileDownload(any());
     doReturn(repoPath).when(gitClientHelper).getFileDownloadRepoDirectory(any());
     addRemote(repoPath);
@@ -396,7 +423,7 @@ public class GitClientV2ImplTest extends CategoryTest {
             .repoUrl(repoPath)
             .authRequest(new UsernamePasswordAuthRequest(USERNAME, PASSWORD.toCharArray()))
             .branch("master")
-            .connectorId("CONNECTOR_ID")
+            .connectorId(CONNECTOR_ID)
             .accountId("ACCOUNT_ID")
             .build();
 
@@ -411,7 +438,7 @@ public class GitClientV2ImplTest extends CategoryTest {
         .hasMessageContaining("New commit id can not be empty");
 
     request.setNewCommitId("t2");
-    doReturn("").when(gitClientHelper).getLockObject(request.getConnectorId());
+    doReturn(cache.get(CONNECTOR_ID)).when(gitClientHelper).getLockObject(request.getConnectorId());
 
     doNothing().when(gitClientHelper).createDirStructureForFileDownload(any());
     doReturn(repoPath).when(gitClientHelper).getFileDownloadRepoDirectory(any());
