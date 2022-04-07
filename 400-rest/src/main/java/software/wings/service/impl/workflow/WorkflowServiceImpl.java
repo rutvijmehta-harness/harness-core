@@ -2653,16 +2653,18 @@ public class WorkflowServiceImpl implements WorkflowService, DataProvider {
                                               .build());
       } else if (workflowExecution != null) {
         List<ArtifactVariable> previousArtifactVariables = workflowExecution.getExecutionArgs().getArtifactVariables();
-        ArtifactVariable foundArtifactVariable =
-            previousArtifactVariables.stream()
-                .filter(previousArtifactVariable
-                    -> artifactVariable.getName().equals(previousArtifactVariable.getName())
-                        && artifactVariable.getEntityType() == previousArtifactVariable.getEntityType()
-                        && artifactVariable.getEntityId().equals(previousArtifactVariable.getEntityId()))
-                .findFirst()
-                .orElse(null);
-        if (foundArtifactVariable != null && foundArtifactVariable.getArtifactInput() != null) {
-          artifactVariable.setArtifactInput(foundArtifactVariable.getArtifactInput());
+        if (isNotEmpty(previousArtifactVariables)) {
+          ArtifactVariable foundArtifactVariable =
+              previousArtifactVariables.stream()
+                  .filter(previousArtifactVariable
+                      -> artifactVariable.getName().equals(previousArtifactVariable.getName())
+                          && artifactVariable.getEntityType() == previousArtifactVariable.getEntityType()
+                          && artifactVariable.getEntityId().equals(previousArtifactVariable.getEntityId()))
+                  .findFirst()
+                  .orElse(null);
+          if (foundArtifactVariable != null && foundArtifactVariable.getArtifactInput() != null) {
+            artifactVariable.setArtifactInput(foundArtifactVariable.getArtifactInput());
+          }
         }
       }
     }
