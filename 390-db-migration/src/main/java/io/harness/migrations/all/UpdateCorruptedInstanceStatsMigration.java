@@ -23,7 +23,9 @@ import io.harness.persistence.HIterator;
 
 import software.wings.beans.EntityType;
 import software.wings.beans.InfrastructureMapping;
+import software.wings.beans.InfrastructureMapping.InfrastructureMappingKeys;
 import software.wings.beans.infrastructure.instance.Instance;
+import software.wings.beans.infrastructure.instance.Instance.InstanceKeys;
 import software.wings.beans.infrastructure.instance.stats.InstanceStatsSnapshot;
 import software.wings.dl.WingsPersistence;
 import software.wings.service.intfc.instance.stats.InstanceStatService;
@@ -68,10 +70,10 @@ public class UpdateCorruptedInstanceStatsMigration implements Migration {
   private void deleteDuplicateInstanceMigration() {
     try (HIterator<InfrastructureMapping> infraMappingIter =
              new HIterator<>(mongoPersistence.createQuery(InfrastructureMapping.class, excludeAuthority)
-                                 .filter(InfrastructureMapping.InfrastructureMappingKeys.deploymentType, "HELM")
+                                 .filter(InfrastructureMappingKeys.deploymentType, "HELM")
                                  .project("_id", true)
-                                 .project(InfrastructureMapping.InfrastructureMappingKeys.accountId, true)
-                                 .project(InfrastructureMapping.InfrastructureMappingKeys.appId, true)
+                                 .project(InfrastructureMappingKeys.accountId, true)
+                                 .project(InfrastructureMappingKeys.appId, true)
                                  .disableValidation()
                                  .fetch())) {
       while (infraMappingIter.hasNext()) {
@@ -85,12 +87,12 @@ public class UpdateCorruptedInstanceStatsMigration implements Migration {
         BulkWriteOperation instanceWriteOperation =
             mongoPersistence.getCollection(Instance.class).initializeUnorderedBulkOperation();
         HashMap<String, Object> query = new HashMap<>();
-        query.put(Instance.InstanceKeys.appId, infraMapping.getAppId());
-        query.put(Instance.InstanceKeys.infraMappingId, infraMapping.getUuid());
-        query.put(Instance.InstanceKeys.createdAt,
+        query.put(InstanceKeys.appId, infraMapping.getAppId());
+        query.put(InstanceKeys.infraMappingId, infraMapping.getUuid());
+        query.put(InstanceKeys.createdAt,
             new BasicDBObject(ImmutableMap.of("$gte", CREATED_AT_FROM_TIMESTAMP, "$lt", CREATED_AT_TILL_TIMESTAMP)));
-        query.put(Instance.InstanceKeys.lastWorkflowExecutionId, null);
-        query.put(Instance.InstanceKeys.lastDeployedById, "AUTO_SCALE");
+        query.put(InstanceKeys.lastWorkflowExecutionId, null);
+        query.put(InstanceKeys.lastDeployedById, "AUTO_SCALE");
 
         instanceWriteOperation.find(new BasicDBObject(query)).remove();
 
