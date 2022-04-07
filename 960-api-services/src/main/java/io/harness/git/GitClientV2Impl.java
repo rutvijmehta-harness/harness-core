@@ -944,7 +944,7 @@ public class GitClientV2Impl implements GitClientV2 {
     cleanup(request);
     validateRequiredArgs(request);
     synchronized (gitClientHelper.getLockObject(request.getConnectorId())) {
-      File interProcessLockFile = new File(format(REPOSITORY_GIT_FILE_LOCK, request.getConnectorId()));
+      File interProcessLockFile = (File) gitClientHelper.getLockObject(request.getConnectorId());
       try (FileOutputStream fileOutputStream = new FileOutputStream(interProcessLockFile);
            FileLock lock = fileOutputStream.getChannel().lock()) {
         checkoutFiles(request);
@@ -1022,7 +1022,7 @@ public class GitClientV2Impl implements GitClientV2 {
     validateRequiredArgs(request);
 
     synchronized (gitClientHelper.getLockObject(request.getConnectorId())) {
-      final File interProcessLockFile = new File(format(REPOSITORY_GIT_FILE_LOCK, request.getConnectorId()));
+      final File interProcessLockFile = (File) gitClientHelper.getLockObject(request.getConnectorId());
       try (FileOutputStream fileOutputStream = new FileOutputStream(interProcessLockFile);
            FileLock lock = fileOutputStream.getChannel().lock()) {
         checkoutFiles(request);

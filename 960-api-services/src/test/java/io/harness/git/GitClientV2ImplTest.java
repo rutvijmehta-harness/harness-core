@@ -9,6 +9,7 @@ package io.harness.git;
 
 import static io.harness.annotations.dev.HarnessTeam.CDP;
 import static io.harness.filesystem.FileIo.createDirectoryIfDoesNotExist;
+import static io.harness.filesystem.FileIo.deleteDirectoryAndItsContentIfExists;
 import static io.harness.git.model.ChangeType.ADD;
 import static io.harness.git.model.ChangeType.DELETE;
 import static io.harness.git.model.ChangeType.RENAME;
@@ -83,6 +84,7 @@ import org.eclipse.jgit.api.errors.NoFilepatternException;
 import org.eclipse.jgit.api.errors.TransportException;
 import org.eclipse.jgit.api.errors.WrongRepositoryStateException;
 import org.eclipse.jgit.revwalk.RevCommit;
+import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -131,6 +133,11 @@ public class GitClientV2ImplTest extends CategoryTest {
     createDirectoryIfDoesNotExist(format(REPO_GIT_DOWNLOAD_DIR, CONNECTOR_ID));
     File indexLockFile = new File(format(INTER_PROCESS_LOCK_FILE, CONNECTOR_ID));
     indexLockFile.createNewFile();
+  }
+
+  @AfterClass
+  public static void afterClass() throws IOException {
+    deleteDirectoryAndItsContentIfExists(format(REPO_GIT_DOWNLOAD_DIR, CONNECTOR_ID));
   }
 
   @Test
@@ -306,7 +313,7 @@ public class GitClientV2ImplTest extends CategoryTest {
     FileUtils.writeStringToFile(new File(repoPath + "/base.txt"), data, UTF_8);
 
     request.setFilePaths(Collections.singletonList("./base.txt"));
-    doReturn("").when(gitClientHelper).getLockObject(request.getConnectorId());
+    doReturn(cache.get(CONNECTOR_ID)).when(gitClientHelper).getLockObject(request.getConnectorId());
 
     doNothing().when(gitClientHelper).createDirStructureForFileDownload(any());
     doReturn(repoPath).when(gitClientHelper).getFileDownloadRepoDirectory(any());
