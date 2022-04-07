@@ -1349,6 +1349,21 @@ public class ArtifactStreamServiceImpl implements ArtifactStreamService, DataPro
   }
 
   @Override
+  public List<ArtifactStream> getArtifactStreamsForService(String appId, String serviceId, List<String> projections) {
+    Query<ArtifactStream> query = wingsPersistence.createQuery(ArtifactStream.class)
+                                      .filter(ArtifactStreamKeys.appId, appId)
+                                      .filter(ArtifactStreamKeys.serviceId, serviceId);
+
+    if (isNotEmpty(projections)) {
+      for (String projectionKey : projections) {
+        query.project(projectionKey, true);
+      }
+    }
+
+    return query.asList();
+  }
+
+  @Override
   public Map<String, String> fetchArtifactSourceProperties(String accountId, String artifactStreamId) {
     ArtifactStream artifactStream = wingsPersistence.get(ArtifactStream.class, artifactStreamId);
     Map<String, String> artifactSourceProperties = new HashMap<>();
