@@ -23,6 +23,7 @@ public interface Constants {
   String REPOSITORY = "./repository";
   String GIT_REPO_BASE_DIR = "./repository/${REPO_TYPE}/${ACCOUNT_ID}/${CONNECTOR_ID}/${REPO_NAME}/${REPO_URL_HASH}";
   String REPOSITORY_GIT_FILE_DOWNLOADS = "./repository/gitFileDownloads";
+  String REPOSITORY_GIT_LOCK_DIR = "./repository/gitFileDownloads/%s";
   String REPOSITORY_GIT_FILE_LOCK = "./repository/gitFileDownloads/%s/interProcessFileLock";
   String REPOSITORY_GIT_FILE_DOWNLOADS_ACCOUNT = "./repository/gitFileDownloads/{ACCOUNT_ID}";
   String REPOSITORY_GIT_FILE_DOWNLOADS_BASE = "./repository/gitFileDownloads/{ACCOUNT_ID}/{CONNECTOR_ID}";

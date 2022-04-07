@@ -23,7 +23,6 @@ import static io.harness.git.Constants.GIT_YAML_LOG_PREFIX;
 import static io.harness.git.Constants.HARNESS_IO_KEY_;
 import static io.harness.git.Constants.HARNESS_SUPPORT_EMAIL_KEY;
 import static io.harness.git.Constants.PATH_DELIMITER;
-import static io.harness.git.Constants.REPOSITORY_GIT_FILE_LOCK;
 import static io.harness.git.model.PushResultGit.pushResultBuilder;
 import static io.harness.govern.Switch.unhandled;
 import static io.harness.validation.Validator.notEmptyCheck;

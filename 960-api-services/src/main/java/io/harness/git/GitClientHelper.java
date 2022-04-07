@@ -30,6 +30,7 @@ import static io.harness.git.Constants.REPOSITORY_GIT_FILE_DOWNLOADS_BASE;
 import static io.harness.git.Constants.REPOSITORY_GIT_FILE_DOWNLOADS_REPO_BASE_DIR;
 import static io.harness.git.Constants.REPOSITORY_GIT_FILE_DOWNLOADS_REPO_DIR;
 import static io.harness.git.Constants.REPOSITORY_GIT_FILE_LOCK;
+import static io.harness.git.Constants.REPOSITORY_GIT_LOCK_DIR;
 import static io.harness.git.model.ChangeType.ADD;
 import static io.harness.git.model.ChangeType.DELETE;
 import static io.harness.git.model.ChangeType.MODIFY;
@@ -239,7 +240,7 @@ public class GitClientHelper {
 
   Object getLockObject(String id) {
     try {
-      createDirectoryIfDoesNotExist(REPOSITORY_GIT_FILE_DOWNLOADS);
+      createDirectoryIfDoesNotExist(format(REPOSITORY_GIT_LOCK_DIR,id));
       File file = new File(format(REPOSITORY_GIT_FILE_LOCK, id));
       file.createNewFile();
       return cache.get(id);
