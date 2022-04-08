@@ -50,13 +50,13 @@ public class UpdateCorruptedInstanceStatsMigration implements Migration {
   @Inject private FeatureFlagService featureFlagService;
   @Inject private WingsPersistence wingsPersistence;
 
-  // time of 21.02.2022 00:00:00 IST
-  private static final Instant FROM = Instant.ofEpochMilli(1645381800000L);
+  // time of 08.03.2022 00:00:00 GMT
+  private static final Instant FROM = Instant.ofEpochMilli(1646524800000L);
 
   // time of 08.03.2022 00:00:00 GMT
-  private static final long CREATED_AT_FROM_TIMESTAMP = 1646697600000L;
+  private static final long CREATED_AT_FROM_TIMESTAMP = 1646524800000L;
   // time of 23.03.2022 00:00:00 GMT
-  private static final long CREATED_AT_TILL_TIMESTAMP = 1647993600000L;
+  private static final long CREATED_AT_TILL_TIMESTAMP = 1648166400000L;
 
   private final String DEBUG_LINE = "UPDATE_CORRUPTED_INSTANCE_STATS_MIGRATION: ";
   @Override
@@ -167,7 +167,7 @@ public class UpdateCorruptedInstanceStatsMigration implements Migration {
       return 0;
     }
     try {
-      return getContainerTypeInstanceCount(accountId, appId, toTime);
+      return getInstanceCount(accountId, appId, toTime);
     } catch (Exception ex) {
       log.error(StringUtils.join(DEBUG_LINE,
                     format("Error getting unique instance count for accountId %s, appId %s ", accountId, appId)),
@@ -176,16 +176,15 @@ public class UpdateCorruptedInstanceStatsMigration implements Migration {
     }
   }
 
-  private long getContainerTypeInstanceCount(String accountId, String appId, Instant toTime) {
+  private long getInstanceCount(String accountId, String appId, Instant toTime) {
     Query<Instance> containerFetchInstancesQuery = wingsPersistence.createQuery(Instance.class)
                                                        .filter("accountId", accountId)
                                                        .filter("appId", appId)
-                                                       .filter("isDeleted", false)
-                                                       .field("deletedAt")
-                                                       .greaterThanOrEq(toTime.toEpochMilli())
                                                        .field("createdAt")
-                                                       .lessThanOrEq(toTime.toEpochMilli())
-                                                       .project("_id", true);
+                                                       .lessThanOrEq(toTime.toEpochMilli());
+    containerFetchInstancesQuery.and(
+        containerFetchInstancesQuery.or(containerFetchInstancesQuery.criteria("isDeleted").equal(false),
+            containerFetchInstancesQuery.criteria("deletedAt").greaterThanOrEq(toTime.toEpochMilli())));
 
     return containerFetchInstancesQuery.count();
   }
