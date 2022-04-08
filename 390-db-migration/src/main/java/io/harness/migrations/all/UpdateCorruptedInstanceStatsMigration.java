@@ -50,12 +50,12 @@ public class UpdateCorruptedInstanceStatsMigration implements Migration {
   @Inject private FeatureFlagService featureFlagService;
   @Inject private WingsPersistence wingsPersistence;
 
-  // time of 08.03.2022 00:00:00 GMT
-  private static final Instant FROM = Instant.ofEpochMilli(1646524800000L);
+  // time of 01.03.2022 00:00:00 GMT
+  private static final Instant FROM = Instant.ofEpochMilli(1646092800000L);
 
-  // time of 08.03.2022 00:00:00 GMT
+  // time of 06.03.2022 00:00:00 GMT
   private static final long CREATED_AT_FROM_TIMESTAMP = 1646524800000L;
-  // time of 23.03.2022 00:00:00 GMT
+  // time of 25.03.2022 00:00:00 GMT
   private static final long CREATED_AT_TILL_TIMESTAMP = 1648166400000L;
 
   private final String DEBUG_LINE = "UPDATE_CORRUPTED_INSTANCE_STATS_MIGRATION: ";
