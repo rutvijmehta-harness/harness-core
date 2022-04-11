@@ -29,8 +29,8 @@ import static io.harness.git.Constants.REPOSITORY_GIT_FILE_DOWNLOADS_ACCOUNT;
 import static io.harness.git.Constants.REPOSITORY_GIT_FILE_DOWNLOADS_BASE;
 import static io.harness.git.Constants.REPOSITORY_GIT_FILE_DOWNLOADS_REPO_BASE_DIR;
 import static io.harness.git.Constants.REPOSITORY_GIT_FILE_DOWNLOADS_REPO_DIR;
-import static io.harness.git.Constants.REPOSITORY_GIT_LOCK_FIlE;
 import static io.harness.git.Constants.REPOSITORY_GIT_LOCK_DIR;
+import static io.harness.git.Constants.REPOSITORY_GIT_LOCK_FIlE;
 import static io.harness.git.model.ChangeType.ADD;
 import static io.harness.git.model.ChangeType.DELETE;
 import static io.harness.git.model.ChangeType.MODIFY;
@@ -89,7 +89,6 @@ public class GitClientHelper {
   private static final Integer REPO_GROUP = 6;
   private static final Integer SCM_GROUP = 3;
 
-
   static {
     try {
       createDirectoryIfDoesNotExist(REPOSITORY_GIT_LOCK_DIR);
@@ -110,7 +109,6 @@ public class GitClientHelper {
                                                                   return file;
                                                                 }
                                                               });
-
 
   public static String getGitRepo(String url) {
     Matcher m = GIT_URL.matcher(url);
