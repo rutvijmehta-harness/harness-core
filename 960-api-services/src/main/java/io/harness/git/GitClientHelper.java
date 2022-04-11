@@ -29,7 +29,7 @@ import static io.harness.git.Constants.REPOSITORY_GIT_FILE_DOWNLOADS_ACCOUNT;
 import static io.harness.git.Constants.REPOSITORY_GIT_FILE_DOWNLOADS_BASE;
 import static io.harness.git.Constants.REPOSITORY_GIT_FILE_DOWNLOADS_REPO_BASE_DIR;
 import static io.harness.git.Constants.REPOSITORY_GIT_FILE_DOWNLOADS_REPO_DIR;
-import static io.harness.git.Constants.REPOSITORY_GIT_FILE_LOCK;
+import static io.harness.git.Constants.REPOSITORY_GIT_LOCK_FIlE;
 import static io.harness.git.Constants.REPOSITORY_GIT_LOCK_DIR;
 import static io.harness.git.model.ChangeType.ADD;
 import static io.harness.git.model.ChangeType.DELETE;
@@ -89,18 +89,6 @@ public class GitClientHelper {
   private static final Integer REPO_GROUP = 6;
   private static final Integer SCM_GROUP = 3;
 
-  private static final LoadingCache<String, File> cache = CacheBuilder.newBuilder()
-                                                              .maximumSize(2000)
-                                                              .expireAfterAccess(1, TimeUnit.HOURS)
-                                                              .build(new CacheLoader<String, File>() {
-                                                                @Override
-                                                                public File load(String key) throws IOException {
-                                                                  File file =
-                                                                      new File(format(REPOSITORY_GIT_FILE_LOCK, key));
-                                                                  file.createNewFile();
-                                                                  return file;
-                                                                }
-                                                              });
 
   static {
     try {
@@ -109,6 +97,20 @@ public class GitClientHelper {
       log.error("Error occurred while creating the lock directory", e);
     }
   }
+
+  private static final LoadingCache<String, File> cache = CacheBuilder.newBuilder()
+                                                              .maximumSize(2000)
+                                                              .expireAfterAccess(1, TimeUnit.HOURS)
+                                                              .build(new CacheLoader<String, File>() {
+                                                                @Override
+                                                                public File load(String key) throws IOException {
+                                                                  File file =
+                                                                      new File(format(REPOSITORY_GIT_LOCK_FIlE, key));
+                                                                  file.createNewFile();
+                                                                  return file;
+                                                                }
+                                                              });
+
 
   public static String getGitRepo(String url) {
     Matcher m = GIT_URL.matcher(url);

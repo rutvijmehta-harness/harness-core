@@ -79,10 +79,12 @@ import com.google.inject.Singleton;
 import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.Session;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.Proxy;
 import java.net.URL;
 import java.net.UnknownHostException;
+import java.nio.channels.FileLock;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -564,8 +566,10 @@ public class GitClientImpl implements GitClient {
 
     validateRequiredArgsForFilesBetweenCommit(gitRequest.getOldCommitId(), gitRequest.getNewCommitId());
 
-    synchronized (gitClientHelper.getLockObject(gitConnectorId)) {
-      try {
+    File lockFile = gitClientHelper.getLockObject(gitConnectorId);
+    synchronized (lockFile) {
+      try (FileOutputStream fileOutputStream = new FileOutputStream(lockFile);
+           FileLock lock = fileOutputStream.getChannel().lock()) {
         log.info(new StringBuilder(128)
                      .append(" Processing Git command: FILES_BETWEEN_COMMITS ")
                      .append("Account: ")
@@ -650,6 +654,7 @@ public class GitClientImpl implements GitClient {
     }
   }
 
+  // use this method wrapped in inter process file lock to handle multiple delegate version
   private String checkoutFiles(GitConfig gitConfig, GitFetchFilesRequest gitRequest, boolean shouldExportCommitSha) {
     synchronized (gitClientHelper.getLockObject(gitRequest.getGitConnectorId())) {
       defaultRepoTypeToYaml(gitConfig);
@@ -692,8 +697,10 @@ public class GitClientImpl implements GitClient {
       boolean shouldExportCommitSha) {
     validateRequiredArgs(gitRequest, gitConfig);
     String gitConnectorId = gitRequest.getGitConnectorId();
-    synchronized (gitClientHelper.getLockObject(gitConnectorId)) {
-      try {
+    File lockFile = gitClientHelper.getLockObject(gitConnectorId);
+    synchronized (lockFile) {
+      try (FileOutputStream fileOutputStream = new FileOutputStream(lockFile);
+           FileLock lock = fileOutputStream.getChannel().lock()) {
         String latestCommitSha = checkoutFiles(gitConfig, gitRequest, shouldExportCommitSha);
         String repoPath = gitClientHelper.getRepoPathForFileDownload(gitConfig, gitRequest.getGitConnectorId());
 
@@ -749,8 +756,10 @@ public class GitClientImpl implements GitClient {
     /*
      * ConnectorId is per gitConfig and will result in diff local path for repo
      * */
-    synchronized (gitClientHelper.getLockObject(gitConnectorId)) {
-      try {
+    File lockFile = gitClientHelper.getLockObject(gitConnectorId);
+    synchronized (lockFile) {
+      try (FileOutputStream fileOutputStream = new FileOutputStream(lockFile);
+           FileLock lock = fileOutputStream.getChannel().lock()) {
         String latestCommitSHA = checkoutFiles(gitConfig, gitRequest, shouldExportCommitSha);
 
         String repoPath = gitClientHelper.getRepoPathForFileDownload(gitConfig, gitRequest.getGitConnectorId());
