@@ -7,11 +7,10 @@
 
 package io.harness.migrations.all;
 
-import static io.harness.data.structure.EmptyPredicate.isNotEmpty;
 import static io.harness.persistence.HQuery.excludeAuthority;
+import static io.harness.threading.Morpheus.sleep;
 
 import static java.lang.String.format;
-import static org.reflections.Reflections.log;
 
 import io.harness.annotations.dev.HarnessTeam;
 import io.harness.annotations.dev.OwnedBy;
@@ -27,47 +26,55 @@ import software.wings.beans.InfrastructureMapping.InfrastructureMappingKeys;
 import software.wings.beans.infrastructure.instance.Instance;
 import software.wings.beans.infrastructure.instance.Instance.InstanceKeys;
 import software.wings.beans.infrastructure.instance.stats.InstanceStatsSnapshot;
-import software.wings.dl.WingsPersistence;
+import software.wings.beans.infrastructure.instance.stats.InstanceStatsSnapshot.AggregateCount;
+import software.wings.beans.infrastructure.instance.stats.InstanceStatsSnapshot.InstanceStatsSnapshotKeys;
 import software.wings.service.intfc.instance.stats.InstanceStatService;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
+import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import com.mongodb.BulkWriteOperation;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.bson.Document;
 import org.mongodb.morphia.query.Query;
 
+@Slf4j
 @OwnedBy(HarnessTeam.CDP)
 public class UpdateCorruptedInstanceStatsMigration implements Migration {
   @Inject private InstanceStatService instanceStatService;
   @Inject private MongoPersistence mongoPersistence;
   @Inject private FeatureFlagService featureFlagService;
-  @Inject private WingsPersistence wingsPersistence;
-
-  // time of 01.03.2022 00:00:00 GMT
-  private static final Instant FROM = Instant.ofEpochMilli(1646092800000L);
 
   // time of 06.03.2022 00:00:00 GMT
-  private static final long CREATED_AT_FROM_TIMESTAMP = 1646524800000L;
+  private static final long FROM = 1646524800000L;
   // time of 25.03.2022 00:00:00 GMT
-  private static final long CREATED_AT_TILL_TIMESTAMP = 1648166400000L;
+  private static final long UNTIL = 1648166400000L;
+
+  private static final int INFRA_INSTANCE_BATCH_SIZE = 50;
+  private static final int INSTANCE_STATS_BATCH_SIZE = 500;
 
   private final String DEBUG_LINE = "UPDATE_CORRUPTED_INSTANCE_STATS_MIGRATION: ";
   @Override
   public void migrate() {
     log.info("Running UpdateCorruptedInstanceStatsMigration");
-    deleteDuplicateInstanceMigration();
-    updateCorruptedInstanceStats();
+    Set<String> affectedAccounts = deleteDuplicateInstanceMigration();
+    updateCorruptedInstanceStats(affectedAccounts);
     log.info("Completed UpdateCorruptedInstanceStatsMigration");
   }
 
-  private void deleteDuplicateInstanceMigration() {
+  private Set<String> deleteDuplicateInstanceMigration() {
+    Set<String> affectedAccounts = new HashSet<>();
     try (HIterator<InfrastructureMapping> infraMappingIter =
              new HIterator<>(mongoPersistence.createQuery(InfrastructureMapping.class, excludeAuthority)
                                  .filter(InfrastructureMappingKeys.deploymentType, "HELM")
@@ -76,79 +83,77 @@ public class UpdateCorruptedInstanceStatsMigration implements Migration {
                                  .project(InfrastructureMappingKeys.appId, true)
                                  .disableValidation()
                                  .fetch())) {
+      int updated = 0;
+      BulkWriteOperation instanceWriteOperation =
+          mongoPersistence.getCollection(Instance.class).initializeUnorderedBulkOperation();
       while (infraMappingIter.hasNext()) {
         InfrastructureMapping infraMapping = infraMappingIter.next();
+        affectedAccounts.add(infraMapping.getAccountId());
         if (featureFlagService.isEnabled(FeatureName.KEEP_PT_AFTER_K8S_DOWNSCALE, infraMapping.getAccountId())) {
           continue;
         }
 
-        log.info("Delete orphaned instances for infra mapping {} and account {}", infraMapping.getUuid(),
-            infraMapping.getAccountId());
-        BulkWriteOperation instanceWriteOperation =
-            mongoPersistence.getCollection(Instance.class).initializeUnorderedBulkOperation();
         HashMap<String, Object> query = new HashMap<>();
         query.put(InstanceKeys.appId, infraMapping.getAppId());
         query.put(InstanceKeys.infraMappingId, infraMapping.getUuid());
-        query.put(InstanceKeys.createdAt,
-            new BasicDBObject(ImmutableMap.of("$gte", CREATED_AT_FROM_TIMESTAMP, "$lt", CREATED_AT_TILL_TIMESTAMP)));
+        query.put(InstanceKeys.createdAt, new BasicDBObject(ImmutableMap.of("$gte", FROM, "$lt", UNTIL)));
         query.put(InstanceKeys.lastWorkflowExecutionId, null);
         query.put(InstanceKeys.lastDeployedById, "AUTO_SCALE");
 
         instanceWriteOperation.find(new BasicDBObject(query)).remove();
+        updated++;
 
-        log.info("Deleted result {} for infraMapping {}", instanceWriteOperation.execute(), infraMapping.getUuid());
+        if (updated >= INFRA_INSTANCE_BATCH_SIZE) {
+          log.info("Delete corrupted instances for {} infra mappings: {}", updated, instanceWriteOperation.execute());
+          sleep(Duration.ofMillis(100)); // give some relax time
+          instanceWriteOperation = mongoPersistence.getCollection(Instance.class).initializeUnorderedBulkOperation();
+          updated = 0;
+        }
+      }
+
+      if (updated != 0) {
+        log.info("Delete corrupted instances for {} infra mappings: {}", updated, instanceWriteOperation.execute());
       }
     }
+
+    return affectedAccounts;
   }
 
-  private void updateCorruptedInstanceStats() {
-    Query<InfrastructureMapping> accountIdsQuery = wingsPersistence.createQuery(InfrastructureMapping.class)
-                                                       .filter("deploymentType", "HELM")
-                                                       .project("accountId", true)
-                                                       .project("_id", true);
-    Set<String> affectedAccounts = new HashSet<>();
-    try (HIterator<InfrastructureMapping> iterator = new HIterator<>(accountIdsQuery.fetch())) {
-      for (InfrastructureMapping mapping : iterator) {
-        affectedAccounts.add(mapping.getAccountId());
-      }
-    } catch (Exception ex) {
-      log.error(StringUtils.join(DEBUG_LINE, "Error fetching affected accounts for migration"), ex);
-    }
-
-    Instant to = Instant.now();
+  private void updateCorruptedInstanceStats(Set<String> affectedAccounts) {
     affectedAccounts.forEach(accountId -> {
       try {
-        List<InstanceStatsSnapshot> instanceStats = instanceStatService.aggregate(accountId, FROM, to);
-        for (InstanceStatsSnapshot statsSnapshot : instanceStats) {
-          List<InstanceStatsSnapshot.AggregateCount> updatedAggregates = new ArrayList<>();
-          int updatedTotal = 0;
-          for (InstanceStatsSnapshot.AggregateCount aggregateCount : statsSnapshot.getAggregateCounts()) {
-            if (aggregateCount.getEntityType().equals(EntityType.APPLICATION)) {
-              long countPerApp =
-                  getCorrectUniqueInstanceCount(accountId, aggregateCount.getId(), statsSnapshot.getTimestamp());
-              if (countPerApp == -1) {
-                log.error(StringUtils.join(DEBUG_LINE,
-                    format("Error getting unique instance count for instanceStatId %s", statsSnapshot.getUuid())));
-                updatedTotal = -1;
-                continue;
-              }
-              updatedAggregates.add(new InstanceStatsSnapshot.AggregateCount(
-                  EntityType.APPLICATION, aggregateCount.getName(), aggregateCount.getId(), (int) countPerApp));
-              updatedTotal += countPerApp;
-            }
-          }
+        int updated = 0;
+        BulkWriteOperation bulkWriteOperation =
+            mongoPersistence.getCollection(InstanceStatsSnapshot.class).initializeUnorderedBulkOperation();
 
-          if (isNotEmpty(updatedAggregates) && updatedTotal != -1) {
-            try {
-              wingsPersistence.updateField(
-                  InstanceStatsSnapshot.class, statsSnapshot.getUuid(), "aggregateCounts", updatedAggregates);
-              wingsPersistence.updateField(InstanceStatsSnapshot.class, statsSnapshot.getUuid(), "total", updatedTotal);
-            } catch (Exception ex) {
-              log.error(StringUtils.join(
-                            DEBUG_LINE, format("Error updating corrupted instanceStatId %s ", statsSnapshot.getUuid())),
-                  ex);
+        List<InstanceStatsSnapshot> instanceStats =
+            instanceStatService.aggregate(accountId, Instant.ofEpochMilli(FROM), Instant.ofEpochMilli(UNTIL));
+        for (InstanceStatsSnapshot statsSnapshot : instanceStats) {
+          InstanceStatsSnapshot updatedInstanceStats =
+              getUpdatedInstanceStatsSnapshot(accountId, statsSnapshot.getTimestamp());
+
+          if (updatedInstanceStats != null) {
+            bulkWriteOperation.find(new BasicDBObject("_id", statsSnapshot.getUuid()))
+                .updateOne(new BasicDBObject("$set",
+                    new Document(ImmutableMap.of(InstanceStatsSnapshotKeys.aggregateCounts,
+                        getAggregateCountDBList(updatedInstanceStats.getAggregateCounts()),
+                        InstanceStatsSnapshotKeys.total, updatedInstanceStats.getTotal()))));
+
+            updated++;
+
+            if (updated >= INSTANCE_STATS_BATCH_SIZE) {
+              log.info(
+                  "Updated {} instance stats four account id {}: {}", updated, accountId, bulkWriteOperation.execute());
+              bulkWriteOperation =
+                  mongoPersistence.getCollection(InstanceStatsSnapshot.class).initializeUnorderedBulkOperation();
+              updated = 0;
             }
           }
+        }
+
+        if (updated != 0) {
+          log.info(
+              "Updated {} instance stats four account id {}: {}", updated, accountId, bulkWriteOperation.execute());
         }
 
       } catch (Exception ex) {
@@ -162,30 +167,65 @@ public class UpdateCorruptedInstanceStatsMigration implements Migration {
     });
   }
 
-  private long getCorrectUniqueInstanceCount(String accountId, String appId, Instant toTime) {
-    if (StringUtils.isBlank(accountId) || StringUtils.isBlank(appId)) {
-      return 0;
+  private InstanceStatsSnapshot getUpdatedInstanceStatsSnapshot(String accountId, Instant toTime) {
+    if (StringUtils.isBlank(accountId)) {
+      return null;
     }
     try {
-      return getInstanceCount(accountId, appId, toTime);
+      HIterator<Instance> instances = getInstances(accountId, toTime);
+      return mapInstanceStatsSnapshot(instances, accountId, toTime);
     } catch (Exception ex) {
-      log.error(StringUtils.join(DEBUG_LINE,
-                    format("Error getting unique instance count for accountId %s, appId %s ", accountId, appId)),
-          ex);
-      return -1;
+      log.error(
+          StringUtils.join(DEBUG_LINE, format("Error getting unique instance count for accountId %s", accountId)), ex);
+      return null;
     }
   }
 
-  private long getInstanceCount(String accountId, String appId, Instant toTime) {
-    Query<Instance> containerFetchInstancesQuery = wingsPersistence.createQuery(Instance.class)
+  private HIterator<Instance> getInstances(String accountId, Instant toTime) {
+    Query<Instance> containerFetchInstancesQuery = mongoPersistence.createQuery(Instance.class, excludeAuthority)
                                                        .filter("accountId", accountId)
-                                                       .filter("appId", appId)
                                                        .field("createdAt")
                                                        .lessThanOrEq(toTime.toEpochMilli());
     containerFetchInstancesQuery.and(
         containerFetchInstancesQuery.or(containerFetchInstancesQuery.criteria("isDeleted").equal(false),
             containerFetchInstancesQuery.criteria("deletedAt").greaterThanOrEq(toTime.toEpochMilli())));
 
-    return containerFetchInstancesQuery.count();
+    containerFetchInstancesQuery = containerFetchInstancesQuery.project("_id", true)
+                                       .project(InstanceKeys.appId, true)
+                                       .project(InstanceKeys.appName, true);
+
+    return new HIterator<>(containerFetchInstancesQuery.fetch());
+  }
+
+  public InstanceStatsSnapshot mapInstanceStatsSnapshot(
+      HIterator<Instance> instances, String accountId, Instant instant) {
+    Collection<AggregateCount> appCounts = aggregateByApp(instances);
+    List<AggregateCount> aggregateCounts = new ArrayList<>(appCounts);
+
+    return new InstanceStatsSnapshot(instant, accountId, aggregateCounts);
+  }
+
+  private Collection<AggregateCount> aggregateByApp(HIterator<Instance> instances) {
+    Map<String, AggregateCount> appCounts = new HashMap<>();
+
+    while (instances.hasNext()) {
+      Instance instance = instances.next();
+      AggregateCount appCount = appCounts.computeIfAbsent(instance.getAppId(),
+          appId -> new AggregateCount(EntityType.APPLICATION, instance.getAppName(), instance.getAppId(), 0));
+      appCount.incrementCount(1);
+    }
+
+    return appCounts.values();
+  }
+
+  private BasicDBList getAggregateCountDBList(List<AggregateCount> aggregateCounts) {
+    BasicDBList basicDBList = new BasicDBList();
+
+    for (final AggregateCount aggregateCount : aggregateCounts) {
+      basicDBList.add(new BasicDBObject(ImmutableMap.of("entityType", aggregateCount.getEntityType().name(), "name",
+          aggregateCount.getName(), "id", aggregateCount.getId(), "count", aggregateCount.getCount())));
+    }
+
+    return basicDBList;
   }
 }
