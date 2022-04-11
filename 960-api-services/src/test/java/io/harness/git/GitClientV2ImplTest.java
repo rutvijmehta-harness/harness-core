@@ -104,9 +104,8 @@ import org.zeroturnaround.exec.stream.LogOutputStream;
 public class GitClientV2ImplTest extends CategoryTest {
   private static final String USERNAME = "USERNAME";
   private static final String PASSWORD = "PASSWORD";
-  private static final String INTER_PROCESS_LOCK_FILE =
-      "./repository/gitFileDownloads/locksTmpDir/interProcessFileLock_%s";
-  private static final String REPO_GIT_DOWNLOAD_DIR = "./repository/gitFileDownloads/locksTmpDir";
+  private static final String REPO_GIT_DOWNLOAD_DIR = "./repository/gitFileDownloads/.locks";
+  private static final String INTER_PROCESS_LOCK_FILE = REPO_GIT_DOWNLOAD_DIR + "/lock_%s";
   private static final String CONNECTOR_ID = "CONNECTOR_ID";
 
   private static final LoadingCache<String, Object> cache =

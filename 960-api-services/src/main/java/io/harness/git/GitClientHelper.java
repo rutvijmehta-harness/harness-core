@@ -89,16 +89,26 @@ public class GitClientHelper {
   private static final Integer REPO_GROUP = 6;
   private static final Integer SCM_GROUP = 3;
 
-  private static final LoadingCache<String, Object> cache =
-      CacheBuilder.newBuilder()
-          .maximumSize(2000)
-          .expireAfterAccess(1, TimeUnit.HOURS)
-          .build(new CacheLoader<String, Object>() {
-            @Override
-            public File load(String key) {
-              return new File(format(REPOSITORY_GIT_FILE_LOCK, key));
-            }
-          });
+  private static final LoadingCache<String, File> cache = CacheBuilder.newBuilder()
+                                                              .maximumSize(2000)
+                                                              .expireAfterAccess(1, TimeUnit.HOURS)
+                                                              .build(new CacheLoader<String, File>() {
+                                                                @Override
+                                                                public File load(String key) throws IOException {
+                                                                  File file =
+                                                                      new File(format(REPOSITORY_GIT_FILE_LOCK, key));
+                                                                  file.createNewFile();
+                                                                  return file;
+                                                                }
+                                                              });
+
+  static {
+    try {
+      createDirectoryIfDoesNotExist(REPOSITORY_GIT_LOCK_DIR);
+    } catch (IOException e) {
+      log.error("Error occurred while creating the lock directory", e);
+    }
+  }
 
   public static String getGitRepo(String url) {
     Matcher m = GIT_URL.matcher(url);
@@ -238,11 +248,8 @@ public class GitClientHelper {
     }
   }
 
-  Object getLockObject(String id) {
+  File getLockObject(String id) {
     try {
-      createDirectoryIfDoesNotExist(REPOSITORY_GIT_LOCK_DIR);
-      File file = new File(format(REPOSITORY_GIT_FILE_LOCK, id));
-      file.createNewFile();
       return cache.get(id);
     } catch (Exception e) {
       throw new NonPersistentLockException(
