@@ -95,7 +95,7 @@ public class GitClientHelper {
           .expireAfterAccess(1, TimeUnit.HOURS)
           .build(new CacheLoader<String, Object>() {
             @Override
-            public Object load(String key) throws Exception {
+            public File load(String key) {
               return new File(format(REPOSITORY_GIT_FILE_LOCK, key));
             }
           });
@@ -240,7 +240,7 @@ public class GitClientHelper {
 
   Object getLockObject(String id) {
     try {
-      createDirectoryIfDoesNotExist(format(REPOSITORY_GIT_LOCK_DIR,id));
+      createDirectoryIfDoesNotExist(REPOSITORY_GIT_LOCK_DIR);
       File file = new File(format(REPOSITORY_GIT_FILE_LOCK, id));
       file.createNewFile();
       return cache.get(id);

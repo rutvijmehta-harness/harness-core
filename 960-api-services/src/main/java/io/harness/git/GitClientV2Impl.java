@@ -1126,6 +1126,7 @@ public class GitClientV2Impl implements GitClientV2 {
         }
       } catch (Exception ex) {
         // just to keep the exception handling behaviour same as before
+        log.error("Exception occurred while checkout.", ex);
         throw ex;
       }
     }
