@@ -149,8 +149,7 @@ public class ConnectorInstrumentationHelper extends InstrumentationHelper {
                         .build(),
                     Category.PLATFORM, TelemetryOption.builder().sendForCommunity(true).build()));
       } else {
-        log.info("There is no account found for account ID = " + accountId
-            + "!. Cannot send Connector Creation Finished event.");
+        log.info("There is no account found for account ID = " + accountId + "!. Cannot send Test Connection event.");
       }
     } catch (Exception e) {
       log.error("Test connection event failed for accountID= " + accountId, e);
