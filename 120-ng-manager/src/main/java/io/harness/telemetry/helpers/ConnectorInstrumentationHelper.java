@@ -9,7 +9,9 @@ package io.harness.telemetry.helpers;
 
 import io.harness.annotations.dev.HarnessTeam;
 import io.harness.annotations.dev.OwnedBy;
+import io.harness.connector.ConnectivityStatus;
 import io.harness.connector.ConnectorInfoDTO;
+import io.harness.connector.ConnectorValidationResult;
 import io.harness.data.structure.EmptyPredicate;
 import io.harness.telemetry.Category;
 import io.harness.telemetry.Destination;
@@ -35,6 +37,10 @@ public class ConnectorInstrumentationHelper extends InstrumentationHelper {
   String CONNECTOR_ORG = "connector_org";
   String CONNECTOR_NAME = "connector_name";
   String CONNECTOR_TYPE = "connector_type";
+  String CONNECTIVITY_STATUS = "connectivity_status";
+  String ERROR_SUMMARY = "error_summary";
+  String ERROR_DETAILS = "error_details";
+  String DELEGATE_ID = "delegate_id";
 
   public CompletableFuture sendConnectorCreateEvent(ConnectorInfoDTO connector, String accountId) {
     try {
@@ -99,6 +105,56 @@ public class ConnectorInstrumentationHelper extends InstrumentationHelper {
       }
     } catch (Exception e) {
       log.error("Connector deletion event failed for accountID= " + accountId, e);
+    }
+    return null;
+  }
+
+  public CompletableFuture sendTestConnectionEvent(ConnectorValidationResult connectorValidationResult,
+                                                   ConnectorInfoDTO connector, String accountId) {
+    try {
+      String eventMessage;
+      if (EmptyPredicate.isNotEmpty(accountId) || !accountId.equals(GLOBAL_ACCOUNT_ID)) {
+        HashMap<String, Object> map = new HashMap<>();
+        String projectIdentifier = connector.getProjectIdentifier();
+        String orgIdentifier = connector.getOrgIdentifier();
+        if (projectIdentifier != null) {
+          map.put(CONNECTOR_PROJECT, projectIdentifier);
+        }
+        if (orgIdentifier != null) {
+          map.put(CONNECTOR_ORG, orgIdentifier);
+        }
+        String delegateId = connectorValidationResult.getDelegateId();
+        if (delegateId != null) {
+          map.put(DELEGATE_ID, delegateId);
+        }
+        map.put(ACCOUNT_ID, accountId);
+        map.put(CONNECTOR_ID, connector.getIdentifier());
+        map.put(CONNECTOR_TYPE, connector.getConnectorType());
+        map.put(CONNECTOR_NAME, connector.getName());
+        map.put(CONNECTIVITY_STATUS, connectorValidationResult.getStatus());
+        if(connectorValidationResult.getStatus() == ConnectivityStatus.SUCCESS){
+          eventMessage = "test_connection_success";
+        }
+        else {
+          eventMessage = "test_connection_failure";
+          map.put(ERROR_SUMMARY, connectorValidationResult.getErrorSummary());
+          map.put(ERROR_DETAILS, connectorValidationResult.getErrors());
+        }
+        String userId = getUserId();
+        return CompletableFuture.runAsync(
+                ()
+                        -> telemetryReporter.sendTrackEvent(eventMessage, userId, accountId, map,
+                        ImmutableMap.<Destination, Boolean>builder()
+                                .put(Destination.AMPLITUDE, true)
+                                .put(Destination.ALL, false)
+                                .build(),
+                        Category.PLATFORM, TelemetryOption.builder().sendForCommunity(true).build()));
+      } else {
+        log.info("There is no account found for account ID = " + accountId
+                + "!. Cannot send Connector Creation Finished event.");
+      }
+    } catch (Exception e) {
+      log.error("Test connection event failed for accountID= " + accountId, e);
     }
     return null;
   }
