@@ -110,7 +110,7 @@ public class ConnectorInstrumentationHelper extends InstrumentationHelper {
   }
 
   public CompletableFuture sendTestConnectionEvent(
-          ConnectorValidationResult connectorValidationResult, ConnectorInfoDTO connector, String accountId) {
+      ConnectorValidationResult connectorValidationResult, ConnectorInfoDTO connector, String accountId) {
     try {
       String eventMessage;
       if (EmptyPredicate.isNotEmpty(accountId) || !accountId.equals(GLOBAL_ACCOUNT_ID)) {
@@ -132,7 +132,7 @@ public class ConnectorInstrumentationHelper extends InstrumentationHelper {
         map.put(CONNECTOR_TYPE, connector.getConnectorType());
         map.put(CONNECTOR_NAME, connector.getName());
         map.put(CONNECTIVITY_STATUS, connectorValidationResult.getStatus());
-        if(connectorValidationResult.getStatus() == ConnectivityStatus.SUCCESS) {
+        if (connectorValidationResult.getStatus() == ConnectivityStatus.SUCCESS) {
           eventMessage = "test_connection_success";
         } else {
           eventMessage = "test_connection_failure";
@@ -141,12 +141,12 @@ public class ConnectorInstrumentationHelper extends InstrumentationHelper {
         }
         String userId = getUserId();
         return CompletableFuture.runAsync(
-                ()
-                    -> telemetryReporter.sendTrackEvent(eventMessage, userId, accountId, map,
+            ()
+                -> telemetryReporter.sendTrackEvent(eventMessage, userId, accountId, map,
                     ImmutableMap.<Destination, Boolean>builder()
-                            .put(Destination.AMPLITUDE, true)
-                            . put(Destination.ALL, false)
-                            .build(),
+                        .put(Destination.AMPLITUDE, true)
+                        .put(Destination.ALL, false)
+                        .build(),
                     Category.PLATFORM, TelemetryOption.builder().sendForCommunity(true).build()));
       } else {
         log.info("There is no account found for account ID = " + accountId

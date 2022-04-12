@@ -513,7 +513,7 @@ public class ConnectorServiceImpl implements ConnectorService {
         updateTheConnectorValidationResultInTheEntity(
             connectorValidationResult, accountIdentifier, orgIdentifier, projectIdentifier, connectorIdentifier);
         instrumentationHelper.sendTestConnectionEvent(
-                connectorValidationResult, connectorDTO.get().getConnector(), accountIdentifier);
+            connectorValidationResult, connectorDTO.get().getConnector(), accountIdentifier);
       }
     }
   }
