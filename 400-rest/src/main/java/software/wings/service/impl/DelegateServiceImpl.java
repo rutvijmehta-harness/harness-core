@@ -1243,7 +1243,7 @@ public class DelegateServiceImpl implements DelegateService {
               .put("upgraderDockerImage",
                   getUpgraderDockerImage(templateParameters.getAccountId(), templateParameters.getDelegateType()))
               .put("accountId", templateParameters.getAccountId())
-              .put("accountSecret", accountSecret)
+              .put("accountSecret", accountSecret != null ? accountSecret : EMPTY)
               .put("base64Secret", base64Secret)
               .put("hexkey", hexkey)
               .put(UPGRADE_VERSION, latestVersion)
@@ -1572,17 +1572,6 @@ public class DelegateServiceImpl implements DelegateService {
       startTarArchiveEntry.setMode(0755);
       out.putArchiveEntry(startTarArchiveEntry);
       try (FileInputStream fis = new FileInputStream(start)) {
-        IOUtils.copy(fis, out);
-      }
-      out.closeArchiveEntry();
-
-      File delegate = File.createTempFile("delegate", ".sh");
-      saveProcessedTemplate(scriptParams, delegate, "delegate.sh.ftl");
-      delegate = new File(delegate.getAbsolutePath());
-      TarArchiveEntry delegateTarArchiveEntry = new TarArchiveEntry(delegate, DELEGATE_DIR + "/delegate.sh");
-      delegateTarArchiveEntry.setMode(0755);
-      out.putArchiveEntry(delegateTarArchiveEntry);
-      try (FileInputStream fis = new FileInputStream(delegate)) {
         IOUtils.copy(fis, out);
       }
       out.closeArchiveEntry();
