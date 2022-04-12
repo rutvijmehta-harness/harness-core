@@ -11,18 +11,11 @@ import static io.harness.data.structure.EmptyPredicate.isEmpty;
 import static io.harness.data.structure.EmptyPredicate.isNotEmpty;
 
 import io.harness.beans.MigratedEntityMapping;
-import io.harness.cdng.manifest.ManifestConfigType;
 import io.harness.cdng.manifest.yaml.GitStore;
 import io.harness.cdng.manifest.yaml.GitStore.GitStoreBuilder;
-import io.harness.cdng.manifest.yaml.ManifestConfig;
 import io.harness.cdng.manifest.yaml.ManifestConfigWrapper;
-import io.harness.cdng.manifest.yaml.kinds.K8sManifest;
-import io.harness.cdng.manifest.yaml.kinds.ValuesManifest;
-import io.harness.cdng.manifest.yaml.storeConfig.StoreConfigType;
-import io.harness.cdng.manifest.yaml.storeConfig.StoreConfigWrapper;
 import io.harness.datacollection.utils.EmptyPredicate;
 import io.harness.delegate.beans.storeconfig.FetchType;
-import io.harness.exception.UnsupportedOperationException;
 import io.harness.ngmigration.beans.BaseEntityInput;
 import io.harness.ngmigration.beans.BaseProvidedInput;
 import io.harness.ngmigration.beans.ManifestProvidedEntitySpec;
@@ -31,13 +24,12 @@ import io.harness.ngmigration.beans.NgEntityDetail;
 import io.harness.ngmigration.client.NGClient;
 import io.harness.ngmigration.client.PmsClient;
 import io.harness.ngmigration.expressions.MigratorExpressionUtils;
+import io.harness.ngmigration.service.ngManifestFactory.NgManifestFactory;
 import io.harness.pms.yaml.ParameterField;
 import io.harness.serializer.JsonUtils;
 
 import software.wings.beans.GitFileConfig;
-import software.wings.beans.appmanifest.AppManifestKind;
 import software.wings.beans.appmanifest.ApplicationManifest;
-import software.wings.beans.appmanifest.StoreType;
 import software.wings.ngmigration.CgEntityId;
 import software.wings.ngmigration.CgEntityNode;
 import software.wings.ngmigration.DiscoveryNode;
@@ -138,13 +130,16 @@ public class ManifestMigrationService implements NgMigrationService {
       if (manifestInput != null && manifestInput.getSpec() != null) {
         entitySpec = JsonUtils.treeToValue(manifestInput.getSpec(), ManifestProvidedEntitySpec.class);
       }
-      ngManifests.add(manifestFactory.getManifestConfigWrapper(applicationManifest, migratedEntities, entitySpec));
+      ManifestConfigWrapper ngManifestConfigWrapper =
+          manifestFactory.getManifestConfigWrapper(applicationManifest, migratedEntities, entitySpec);
+      ngManifests.add(ngManifestConfigWrapper);
     }
     return ngManifests;
   }
 
   // TODO: use scoped connectorRef ref
-  GitStore getGitStore(GitFileConfig gitFileConfig, ManifestProvidedEntitySpec manifestInput, String connectorRef) {
+  public GitStore getGitStore(
+      GitFileConfig gitFileConfig, ManifestProvidedEntitySpec manifestInput, String connectorRef) {
     GitStoreBuilder gitStoreBuilder =
         GitStore.builder()
             .branch(ParameterField.createValueField(gitFileConfig.getBranch()))
