@@ -40,6 +40,7 @@ import io.harness.pms.contracts.service.VariableMergeResponseProto;
 import io.harness.pms.contracts.service.VariablesServiceGrpc.VariablesServiceBlockingStub;
 import io.harness.pms.contracts.service.VariablesServiceRequest;
 import io.harness.pms.mappers.VariablesResponseDtoMapper;
+import io.harness.pms.merger.helpers.RuntimeInputFormHelper;
 import io.harness.pms.variables.VariableMergeServiceResponse;
 import io.harness.security.annotations.NextGenManagerAuth;
 import io.harness.template.TemplateFilterPropertiesDTO;
@@ -624,5 +625,7 @@ public class NGTemplateResource {
   public void refresh(@NotNull @QueryParam(NGCommonEntityConstants.ACCOUNT_KEY) @AccountIdentifier String accountId,
       @QueryParam(NGCommonEntityConstants.ORG_KEY) @OrgIdentifier String orgId,
       @QueryParam(NGCommonEntityConstants.PROJECT_KEY) @ProjectIdentifier String projectId,
-      @BeanParam GitEntityFindInfoDTO gitEntityBasicInfo, RefreshRequestDTO refreshRequest) {}
+      @BeanParam GitEntityFindInfoDTO gitEntityBasicInfo, RefreshRequestDTO refreshRequest) {
+    templateMergeHelper.refreshTemplates(accountId, orgId, projectId, refreshRequest.getYaml());
+  }
 }

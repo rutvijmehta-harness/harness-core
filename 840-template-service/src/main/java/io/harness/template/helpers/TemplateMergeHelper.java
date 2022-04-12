@@ -414,6 +414,35 @@ public class TemplateMergeHelper {
     return resMap;
   }
 
+  public void refreshTemplates(String accountId, String orgId, String projectId, String yaml) {
+    if (isEmpty(yaml)) {
+      throw new NGTemplateException("Yaml to be refreshed cannot be empty.");
+    }
+    YamlNode yamlNode;
+    try {
+      yamlNode = YamlUtils.readTree(yaml).getNode();
+    } catch (IOException e) {
+      log.error("Could not convert yaml to JsonNode. Yaml:\n" + yaml, e);
+      throw new NGTemplateException("Could not convert yaml to JsonNode: " + e.getMessage());
+    }
+    refreshTemplateInYaml(accountId, orgId, projectId, yamlNode);
+  }
+
+  private void refreshTemplateInYaml(String accountId, String orgId, String projectId, YamlNode yamlNode) {
+    for (YamlField childYamlField : yamlNode.fields()) {
+      String fieldName = childYamlField.getName();
+      JsonNode value = childYamlField.getNode().getCurrJsonNode();
+      if (isTemplatePresent(fieldName, value)) {
+        // main function
+        continue;
+      }
+      if (value.isValueNode() || YamlUtils.checkIfNodeIsArrayWithPrimitiveTypes(value)) {
+      } else if (value.isArray()) {
+      } else {
+      }
+    }
+  }
+
   private Object validateTemplateInputsInArray(String accountId, String orgId, String projectId, YamlNode yamlNode,
       Map<String, TemplateInputsErrorDTO> templateInputsErrorMap, Map<String, TemplateEntity> templateCacheMap) {
     List<Object> arrayList = new ArrayList<>();

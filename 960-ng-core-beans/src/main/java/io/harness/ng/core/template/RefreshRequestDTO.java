@@ -25,6 +25,5 @@ import lombok.Data;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @ApiModel("RefreshRequest")
 public class RefreshRequestDTO {
-  @NotNull String originalEntityYaml;
-  boolean checkForAccess;
+  @NotNull String yaml;
 }
