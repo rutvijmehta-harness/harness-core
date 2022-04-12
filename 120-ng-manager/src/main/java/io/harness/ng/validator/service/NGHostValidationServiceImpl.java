@@ -15,6 +15,7 @@ import static io.harness.delegate.task.utils.PhysicalDataCenterConstants.HOSTS_N
 import static io.harness.delegate.task.utils.PhysicalDataCenterConstants.TRUE_STR;
 import static io.harness.delegate.task.utils.PhysicalDataCenterUtils.extractHostnameFromHost;
 import static io.harness.delegate.task.utils.PhysicalDataCenterUtils.extractPortFromHost;
+import static io.harness.delegate.task.utils.PhysicalDataCenterUtils.getPortOrSSHDefault;
 import static io.harness.exception.WingsException.USER;
 import static io.harness.exception.WingsException.USER_SRE;
 import static io.harness.ng.validator.dto.HostValidationDTO.HostValidationStatus.FAILED;
@@ -28,6 +29,8 @@ import io.harness.delegate.beans.DelegateResponseData;
 import io.harness.delegate.beans.ErrorNotifyResponseData;
 import io.harness.delegate.beans.RemoteMethodReturnValueData;
 import io.harness.delegate.beans.SSHTaskParams;
+import io.harness.delegate.beans.connector.pdcconnector.HostConnectivityTaskParams;
+import io.harness.delegate.beans.connector.pdcconnector.HostConnectivityTaskResponse;
 import io.harness.delegate.beans.secrets.SSHConfigValidationTaskResponse;
 import io.harness.delegate.task.utils.PhysicalDataCenterConstants;
 import io.harness.delegate.utils.TaskSetupAbstractionHelper;
@@ -61,6 +64,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
@@ -76,7 +80,82 @@ public class NGHostValidationServiceImpl implements NGHostValidationService {
   @Inject private NGSecretServiceV2 ngSecretServiceV2;
   @Inject private TaskSetupAbstractionHelper taskSetupAbstractionHelper;
   @Inject private DelegateGrpcClientWrapper delegateGrpcClientWrapper;
-  private final Executor executor = new ManagedExecutorService(Executors.newFixedThreadPool(4));
+  private final Executor hostsConnectivityExecutor = new ManagedExecutorService(Executors.newFixedThreadPool(4));
+  private final Executor hostsSSHExecutor = new ManagedExecutorService(Executors.newFixedThreadPool(4));
+
+  @Override
+  public List<HostValidationDTO> validateHostsConnectivity(@NotNull List<String> hosts,
+      @Nullable String accountIdentifier, @Nullable String orgIdentifier, @Nullable String projectIdentifier,
+      Set<String> delegateSelectors) {
+    if (hosts.isEmpty()) {
+      return Collections.emptyList();
+    }
+
+    CompletableFutures<HostValidationDTO> validateHostSocketConnectivityTasks =
+        new CompletableFutures<>(hostsConnectivityExecutor);
+    for (String hostName : limitHosts(hosts)) {
+      validateHostSocketConnectivityTasks.supplyAsyncExceptionally(
+          ()
+              -> validateHostConnectivity(
+                  hostName, accountIdentifier, orgIdentifier, projectIdentifier, delegateSelectors),
+          ex
+          -> HostValidationDTO.builder()
+                 .host(hostName)
+                 .status(FAILED)
+                 .error(buildErrorDetailsWithMsg(ex.getMessage(), hostName))
+                 .build());
+    }
+
+    return executeParallelTasks(validateHostSocketConnectivityTasks);
+  }
+
+  @Override
+  public HostValidationDTO validateHostConnectivity(@NotNull String host, String accountIdentifier,
+      @Nullable String orgIdentifier, @Nullable String projectIdentifier, Set<String> delegateSelectors) {
+    if (isBlank(host)) {
+      throw new InvalidArgumentsException("Host cannot be null or empty", USER_SRE);
+    }
+
+    String portOrSSHDefault = getPortOrSSHDefault(host);
+    String hostName = extractHostnameFromHost(host).orElseThrow(
+        ()
+            -> new InvalidArgumentsException(
+                format("Not found hostName, host: %s, extracted port: %s", host, portOrSSHDefault), USER_SRE));
+
+    DelegateTaskRequest delegateTaskRequest =
+        DelegateTaskRequest.builder()
+            .accountId(accountIdentifier)
+            .taskType(TaskType.NG_HOST_CONNECTIVITY_TASK.name())
+            .taskParameters(HostConnectivityTaskParams.builder()
+                                .hostName(hostName)
+                                .port(Integer.parseInt(portOrSSHDefault))
+                                .delegateSelectors(delegateSelectors)
+                                .build())
+            .taskSetupAbstractions(setupTaskAbstractions(accountIdentifier, orgIdentifier, projectIdentifier))
+            .executionTimeout(Duration.ofSeconds(PhysicalDataCenterConstants.EXECUTION_TIMEOUT_IN_SECONDS))
+            .build();
+
+    log.info("Start host connectivity validation, host:{}, hostName:{}, accountIdent:{}, orgIdent:{}, projIdent:{},",
+        host, hostName, accountIdentifier, orgIdentifier, projectIdentifier);
+    DelegateResponseData delegateResponseData = this.delegateGrpcClientWrapper.executeSyncTask(delegateTaskRequest);
+
+    if (delegateResponseData instanceof HostConnectivityTaskResponse) {
+      HostConnectivityTaskResponse responseData = (HostConnectivityTaskResponse) delegateResponseData;
+      return HostValidationDTO.builder()
+          .host(hostName)
+          .status(HostValidationDTO.HostValidationStatus.fromBoolean(responseData.isConnectionSuccessful()))
+          .error(responseData.isConnectionSuccessful()
+                  ? buildEmptyErrorDetails()
+                  : buildErrorDetailsWithMsg(responseData.getErrorMessage(), hostName))
+          .build();
+    }
+
+    return HostValidationDTO.builder()
+        .host(hostName)
+        .status(FAILED)
+        .error(buildErrorDetailsWithMsg(getErrorMessageFromDelegateResponseData(delegateResponseData), hostName))
+        .build();
+  }
 
   @Override
   public List<HostValidationDTO> validateSSHHosts(@NotNull List<String> hosts, @Nullable String accountIdentifier,
@@ -88,11 +167,11 @@ public class NGHostValidationServiceImpl implements NGHostValidationService {
       throw new InvalidArgumentsException("Secret identifier cannot be null or empty", USER_SRE);
     }
 
-    CompletableFutures<HostValidationDTO> validateHostTasks = new CompletableFutures<>(executor);
+    CompletableFutures<HostValidationDTO> validateSSHHostTasks = new CompletableFutures<>(hostsSSHExecutor);
     for (String hostName : limitHosts(hosts)) {
-      validateHostTasks.supplyAsyncExceptionally(()
-                                                     -> validateSSHHost(hostName, accountIdentifier, orgIdentifier,
-                                                         projectIdentifier, secretIdentifierWithScope),
+      validateSSHHostTasks.supplyAsyncExceptionally(()
+                                                        -> validateSSHHost(hostName, accountIdentifier, orgIdentifier,
+                                                            projectIdentifier, secretIdentifierWithScope),
           ex
           -> HostValidationDTO.builder()
                  .host(hostName)
@@ -101,15 +180,7 @@ public class NGHostValidationServiceImpl implements NGHostValidationService {
                  .build());
     }
 
-    CompletableFuture<List<HostValidationDTO>> hostValidationResults = validateHostTasks.allOf();
-    try {
-      return new ArrayList<>(hostValidationResults.get());
-    } catch (InterruptedException ex) {
-      Thread.currentThread().interrupt();
-      throw new InvalidRequestException(ex.getMessage(), USER);
-    } catch (ExecutionException ex) {
-      throw new InvalidRequestException(ex.getMessage(), USER);
-    }
+    return executeParallelTasks(validateSSHHostTasks);
   }
 
   @Override
@@ -181,6 +252,19 @@ public class NGHostValidationServiceImpl implements NGHostValidationService {
         .status(FAILED)
         .error(buildErrorDetailsWithMsg(getErrorMessageFromDelegateResponseData(delegateResponseData), hostName))
         .build();
+  }
+
+  private List<HostValidationDTO> executeParallelTasks(
+      @NotNull CompletableFutures<HostValidationDTO> validateHostTasks) {
+    CompletableFuture<List<HostValidationDTO>> hostValidationResults = validateHostTasks.allOf();
+    try {
+      return new ArrayList<>(hostValidationResults.get());
+    } catch (InterruptedException ex) {
+      Thread.currentThread().interrupt();
+      throw new InvalidRequestException(ex.getMessage(), USER);
+    } catch (ExecutionException ex) {
+      throw new InvalidRequestException(ex.getMessage(), USER);
+    }
   }
 
   @NotNull

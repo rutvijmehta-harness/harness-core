@@ -157,6 +157,8 @@ import io.harness.delegate.beans.connector.k8Connector.K8sValidationParams;
 import io.harness.delegate.beans.connector.k8Connector.KubernetesConnectionTaskParams;
 import io.harness.delegate.beans.connector.k8Connector.KubernetesConnectionTaskResponse;
 import io.harness.delegate.beans.connector.nexusconnector.NexusValidationParams;
+import io.harness.delegate.beans.connector.pdcconnector.HostConnectivityTaskParams;
+import io.harness.delegate.beans.connector.pdcconnector.HostConnectivityTaskResponse;
 import io.harness.delegate.beans.connector.pdcconnector.PhysicalDataCenterConnectorValidationParams;
 import io.harness.delegate.beans.connector.scm.ScmValidationParams;
 import io.harness.delegate.beans.connector.servicenow.ServiceNowConnectionTaskParams;
@@ -1140,5 +1142,7 @@ public class DelegateTasksBeansKryoRegister implements KryoRegistrar {
     kryo.register(PhysicalDataCenterConnectorValidationParams.class, 543489);
     kryo.register(ContainerSecurityContext.class, 543490);
     kryo.register(ContainerCapabilities.class, 543491);
+    kryo.register(HostConnectivityTaskParams.class, 543492);
+    kryo.register(HostConnectivityTaskResponse.class, 543493);
   }
 }

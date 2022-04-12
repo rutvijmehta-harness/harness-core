@@ -37,8 +37,9 @@ public class PhysicalDataCenterConnectorValidator implements ConnectionValidator
   public ConnectorValidationResult validate(PhysicalDataCenterConnectorDTO connectorDTO, String accountIdentifier,
       String orgIdentifier, String projectIdentifier, String identifier) {
     long startTestingAt = System.currentTimeMillis();
-    List<HostValidationDTO> hostValidationDTOs = hostValidationService.validateSSHHosts(getHostNames(connectorDTO),
-        accountIdentifier, orgIdentifier, projectIdentifier, connectorDTO.getSshKeyRef().toSecretRefStringValue());
+    List<HostValidationDTO> hostValidationDTOs =
+        hostValidationService.validateHostsConnectivity(getHostNames(connectorDTO), accountIdentifier, orgIdentifier,
+            projectIdentifier, connectorDTO.getDelegateSelectors());
 
     return buildConnectorValidationResult(hostValidationDTOs, startTestingAt);
   }
