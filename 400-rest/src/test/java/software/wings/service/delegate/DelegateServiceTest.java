@@ -145,6 +145,7 @@ import io.harness.logstreaming.LogStreamingServiceConfig;
 import io.harness.manage.GlobalContextManager;
 import io.harness.network.LocalhostUtils;
 import io.harness.observer.Subject;
+import io.harness.outbox.api.OutboxService;
 import io.harness.persistence.HPersistence;
 import io.harness.rule.Owner;
 import io.harness.security.encryption.EncryptedDataDetail;
@@ -261,6 +262,8 @@ public class DelegateServiceTest extends WingsBaseTest {
   private static final String UNIQUE_DELEGATE_NAME = "delegateNameUnique";
   private static final String DELEGATE_IMAGE_TAG = "harness/delegate:latest";
   private static final String UPGRADER_IMAGE_TAG = "harness/upgrader:latest";
+  private static final String ORG_ID = "ORG_ID";
+  private static final String PROJECT_ID = "PROJECT_ID";
   private static final String UNIQUE_DELEGATE_NAME_ERROR_MESSAGE =
       "Delegate with same name exists. Delegate name must be unique across account.";
   private static final String DELEGATE_TOKEN_ERROR_MESSAGE = "Delegate Token must be provided.";
@@ -287,6 +290,7 @@ public class DelegateServiceTest extends WingsBaseTest {
   @Mock private DelegateTokenService delegateTokenService;
   @Mock private DelegateNgTokenService delegateNgTokenService;
   @Mock private Producer eventProducer;
+  @Inject private OutboxService outboxService;
 
   @Inject private FeatureTestHelper featureTestHelper;
   @Inject private DelegateConnectionDao delegateConnectionDao;
@@ -1096,7 +1100,6 @@ public class DelegateServiceTest extends WingsBaseTest {
     assertThat(delegateFromDb.isProxy()).isEqualTo(params.isProxy());
     assertThat(delegateFromDb.isPolllingModeEnabled()).isEqualTo(params.isPollingModeEnabled());
     assertThat(delegateFromDb.isSampleDelegate()).isEqualTo(params.isSampleDelegate());
-    assertThat(delegateFromDb.getTags()).containsExactly("tag1", "tag2");
     assertThat(delegateGroupFromDb.getTags()).containsExactlyInAnyOrder("tag1", "tag2");
   }
 
@@ -1868,17 +1871,6 @@ public class DelegateServiceTest extends WingsBaseTest {
 
       byte[] buffer = new byte[(int) file.getSize()];
       IOUtils.read(tarArchiveInputStream, buffer);
-      String expected =
-          CharStreams.toString(new InputStreamReader(getClass().getResourceAsStream(expectedStartFilepath)))
-              .replaceAll("8888", "" + port);
-      String actual = new String(buffer);
-      assertThat(actual.equals(expected));
-      file = (TarArchiveEntry) tarArchiveInputStream.getNextEntry();
-      assertThat(file).extracting(TarArchiveEntry::getName).isEqualTo(DELEGATE_DIR + "/delegate.sh");
-      assertThat(file).extracting(TarArchiveEntry::getMode).isEqualTo(0755);
-
-      buffer = new byte[(int) file.getSize()];
-      IOUtils.read(tarArchiveInputStream, buffer);
       String expectedD =
           CharStreams.toString(new InputStreamReader(getClass().getResourceAsStream(expectedDelegateFilepath)))
               .replaceAll("8888", "" + port);
@@ -1945,17 +1937,6 @@ public class DelegateServiceTest extends WingsBaseTest {
       assertThat(new String(buffer))
           .isEqualTo(
               CharStreams.toString(new InputStreamReader(getClass().getResourceAsStream("/expectedStartOpenJdk.sh")))
-                  .replaceAll("8888", "" + port));
-
-      file = (TarArchiveEntry) tarArchiveInputStream.getNextEntry();
-      assertThat(file).extracting(TarArchiveEntry::getName).isEqualTo(DELEGATE_DIR + "/delegate.sh");
-      assertThat(file).extracting(TarArchiveEntry::getMode).isEqualTo(0755);
-
-      buffer = new byte[(int) file.getSize()];
-      IOUtils.read(tarArchiveInputStream, buffer);
-      assertThat(new String(buffer))
-          .isEqualTo(
-              CharStreams.toString(new InputStreamReader(getClass().getResourceAsStream("/expectedDelegateOpenJdk.sh")))
                   .replaceAll("8888", "" + port));
 
       file = (TarArchiveEntry) tarArchiveInputStream.getNextEntry();

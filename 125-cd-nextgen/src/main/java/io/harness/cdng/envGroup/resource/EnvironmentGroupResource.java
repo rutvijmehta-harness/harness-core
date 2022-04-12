@@ -49,7 +49,6 @@ import io.harness.ng.core.environment.beans.Environment;
 import io.harness.ng.core.environment.dto.EnvironmentResponse;
 import io.harness.ng.core.environment.mappers.EnvironmentMapper;
 import io.harness.ng.core.environment.services.EnvironmentService;
-import io.harness.ng.core.utils.CoreCriteriaUtils;
 import io.harness.pms.rbac.NGResourceType;
 import io.harness.rbac.CDNGRbacPermissions;
 import io.harness.security.annotations.NextGenManagerAuth;
@@ -224,7 +223,8 @@ public class EnvironmentGroupResource {
       @BeanParam PageRequest pageRequest, @BeanParam GitEntityFindInfoDTO gitEntityBasicInfo) {
     accessControlClient.checkForAccessOrThrow(ResourceScope.of(accountId, orgIdentifier, projectIdentifier),
         Resource.of(NGResourceType.ENVIRONMENT_GROUP, null), CDNGRbacPermissions.ENVIRONMENT_GROUP_VIEW_PERMISSION);
-    Criteria criteria = CoreCriteriaUtils.createCriteriaForGetList(accountId, orgIdentifier, projectIdentifier, false);
+    Criteria criteria =
+        environmentGroupService.formCriteria(accountId, orgIdentifier, projectIdentifier, false, searchTerm);
 
     if (isEmpty(pageRequest.getSortOrders())) {
       SortOrder order = SortOrder.Builder.aSortOrder()
@@ -277,10 +277,12 @@ public class EnvironmentGroupResource {
         @io.swagger.v3.oas.annotations.responses.
         ApiResponse(responseCode = "default", description = "Returns the updated Environment Group")
       })
+  @NGAccessControlCheck(resourceType = NGResourceType.ENVIRONMENT_GROUP,
+      permission = CDNGRbacPermissions.ENVIRONMENT_GROUP_UPDATE_PERMISSION)
   public ResponseDTO<EnvironmentGroupResponse>
   update(@HeaderParam(IF_MATCH) String ifMatch,
       @Parameter(description = ENVIRONMENT_GROUP_PARAM_MESSAGE) @NotNull @PathParam(
-          NGCommonEntityConstants.ENVIRONMENT_GROUP_KEY) String envGroupId,
+          NGCommonEntityConstants.ENVIRONMENT_GROUP_KEY) @ResourceIdentifier String envGroupId,
       @NotNull @QueryParam(NGCommonEntityConstants.ACCOUNT_KEY) @AccountIdentifier @Parameter(
           description = NGCommonEntityConstants.ACCOUNT_PARAM_MESSAGE) String accountId,
       @NotNull @QueryParam(NGCommonEntityConstants.ORG_KEY) @OrgIdentifier @Parameter(
@@ -298,6 +300,9 @@ public class EnvironmentGroupResource {
         EnvironmentGroupMapper.toEnvironmentEntity(accountId, orgIdentifier, projectIdentifier, yaml);
     // Validate the fields of the Entity
     validate(requestedEntity);
+
+    // validate view permissions for each environment linked with environment group
+    validatePermissionForEnvironment(requestedEntity);
 
     // Validating if identifier is same passed in yaml and path param
     if (!envGroupId.equals(requestedEntity.getIdentifier())) {

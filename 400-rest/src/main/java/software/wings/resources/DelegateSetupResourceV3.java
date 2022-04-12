@@ -28,6 +28,9 @@ import static software.wings.service.impl.DelegateServiceImpl.KUBERNETES_DELEGAT
 
 import static java.util.stream.Collectors.toList;
 
+import io.harness.NGCommonEntityConstants;
+import io.harness.accesscontrol.OrgIdentifier;
+import io.harness.accesscontrol.ProjectIdentifier;
 import io.harness.accesscontrol.acl.api.Resource;
 import io.harness.accesscontrol.acl.api.ResourceScope;
 import io.harness.accesscontrol.clients.AccessControlClient;
@@ -37,6 +40,7 @@ import io.harness.annotations.dev.TargetModule;
 import io.harness.data.validator.Trimmed;
 import io.harness.delegate.beans.Delegate;
 import io.harness.delegate.beans.DelegateApproval;
+import io.harness.delegate.beans.DelegateGroupListing;
 import io.harness.delegate.beans.DelegateSetupDetails;
 import io.harness.delegate.beans.DelegateSizeDetails;
 import io.harness.delegate.task.DelegateLogContext;
@@ -383,40 +387,6 @@ public class DelegateSetupResourceV3 {
 
     public void setExcludeScopeIds(List<String> excludeScopeIds) {
       this.excludeScopeIds = excludeScopeIds;
-    }
-  }
-
-  @PUT
-  @Path("{delegateId}/tags")
-  @Timed
-  @ExceptionMetered
-  @AuthRule(permissionType = ACCOUNT_MANAGEMENT)
-  @AuthRule(permissionType = MANAGE_DELEGATES)
-  @Operation(operationId = "updateDelegateTags", summary = "Updates tags for the delegate.",
-      responses =
-      {
-        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "default", description = "Updated delegate")
-      })
-  public RestResponse<Delegate>
-  updateTags(@Parameter(description = "Delegate UUID") @PathParam("delegateId") @NotEmpty String delegateId,
-      @Parameter(description = "Account UUID") @QueryParam("accountId") @NotEmpty String accountId,
-      @RequestBody(required = true, description = "List of tag values to be updated") DelegateTags delegateTags) {
-    try (AutoLogContext ignore1 = new AccountLogContext(accountId, OVERRIDE_ERROR);
-         AutoLogContext ignore2 = new DelegateLogContext(delegateId, OVERRIDE_ERROR)) {
-      Delegate delegate = delegateCache.get(accountId, delegateId, true);
-      delegate.setTags(delegateTags.getTags());
-      return new RestResponse<>(delegateService.updateTags(delegate));
-    }
-  }
-
-  @VisibleForTesting
-  protected static class DelegateTags {
-    private List<String> tags;
-    public List<String> getTags() {
-      return tags;
-    }
-    public void setTags(List<String> tags) {
-      this.tags = tags;
     }
   }
 
@@ -1048,6 +1018,34 @@ public class DelegateSetupResourceV3 {
       delegateService.createDelegateGroup(accountId, delegateSetupDetails);
 
       return Response.ok().build();
+    }
+  }
+
+  // TODO: ARPIT remove this api once UI starts a new one from DelegateTokenNgResource
+  @GET
+  @Path("/ng/delegate-token")
+  @Timed
+  @ExceptionMetered
+  @Operation(operationId = "getDelegateGroups", summary = "Lists Delegate Groups.",
+      responses =
+      {
+        @io.swagger.v3.oas.annotations.responses.
+        ApiResponse(responseCode = "default", description = "A list of Delegate Groups.")
+      })
+  public RestResponse<DelegateGroupListing>
+  list(@Parameter(description = NGCommonEntityConstants.ACCOUNT_PARAM_MESSAGE) @NotEmpty @QueryParam(
+           "accountId") @NotNull String accountIdentifier,
+      @Parameter(description = NGCommonEntityConstants.ORG_PARAM_MESSAGE) @QueryParam(
+          NGCommonEntityConstants.ORG_KEY) @OrgIdentifier String orgIdentifier,
+      @Parameter(description = NGCommonEntityConstants.PROJECT_PARAM_MESSAGE) @QueryParam(
+          NGCommonEntityConstants.PROJECT_KEY) @ProjectIdentifier String projectIdentifier,
+      @Parameter(description = "Delegate Token name") @QueryParam("delegateTokenName") String delegateTokenName) {
+    accessControlClient.checkForAccessOrThrow(ResourceScope.of(accountIdentifier, orgIdentifier, projectIdentifier),
+        Resource.of(DELEGATE_RESOURCE_TYPE, null), DELEGATE_VIEW_PERMISSION);
+
+    try (AutoLogContext ignore1 = new AccountLogContext(accountIdentifier, OVERRIDE_ERROR)) {
+      return new RestResponse<>(delegateSetupService.listDelegateGroupDetails(
+          accountIdentifier, orgIdentifier, projectIdentifier, delegateTokenName));
     }
   }
 
