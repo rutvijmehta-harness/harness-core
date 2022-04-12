@@ -479,8 +479,7 @@ public class ConnectorServiceImpl implements ConnectorService {
     try (AutoLogContext ignore1 =
              new NgAutoLogContext(projectIdentifier, orgIdentifier, accountIdentifier, OVERRIDE_ERROR);
          AutoLogContext ignore2 = new ConnectorLogContext(connectorIdentifier, OVERRIDE_ERROR)) {
-      connectorDTO =
-          get(accountIdentifier, orgIdentifier, projectIdentifier, connectorIdentifier);
+      connectorDTO = get(accountIdentifier, orgIdentifier, projectIdentifier, connectorIdentifier);
       if (connectorDTO.isPresent()) {
         ConnectorResponseDTO connectorResponse = connectorDTO.get();
         ConnectorInfoDTO connectorInfoDTO = connectorResponse.getConnector();
@@ -513,8 +512,8 @@ public class ConnectorServiceImpl implements ConnectorService {
       if (connectorValidationResult != null) {
         updateTheConnectorValidationResultInTheEntity(
             connectorValidationResult, accountIdentifier, orgIdentifier, projectIdentifier, connectorIdentifier);
-        instrumentationHelper.sendTestConnectionEvent(connectorValidationResult, connectorDTO.get().getConnector(),
-                accountIdentifier);
+        instrumentationHelper.sendTestConnectionEvent(
+                connectorValidationResult, connectorDTO.get().getConnector(), accountIdentifier);
       }
     }
   }

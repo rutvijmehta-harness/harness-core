@@ -16,8 +16,8 @@ import static junit.framework.TestCase.assertTrue;
 import io.harness.annotations.dev.HarnessTeam;
 import io.harness.annotations.dev.OwnedBy;
 import io.harness.category.element.UnitTests;
-import io.harness.connector.ConnectorInfoDTO;
 import io.harness.connector.ConnectorDTO;
+import io.harness.connector.ConnectorInfoDTO;
 import io.harness.connector.ConnectorResponseDTO;
 import io.harness.connector.ConnectorValidationResult;
 import io.harness.delegate.beans.connector.k8Connector.KubernetesAuthDTO;
@@ -31,7 +31,6 @@ import io.harness.rule.Owner;
 import io.harness.telemetry.TelemetryReporter;
 
 import java.util.concurrent.CompletableFuture;
-
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -116,7 +115,7 @@ public class ConnectorInstrumentationHelperTest {
   public void testConnectionTestTrackSend() {
     ConnectorResponseDTO connectorDTOOutput = createConnector(identifier, name);
     CompletableFuture telemetryTask = instrumentationHelper.sendTestConnectionEvent(
-            connectorValidationResult, connectorDTOOutput.getConnector(), accountIdentifier);
+        connectorValidationResult, connectorDTOOutput.getConnector(), accountIdentifier);
     telemetryTask.join();
     assertTrue(telemetryTask.isDone());
   }
