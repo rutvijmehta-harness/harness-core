@@ -12,7 +12,6 @@ import static io.harness.connector.ConnectorTestConstants.CONNECTOR_IDENTIFIER;
 import static io.harness.connector.ConnectorTestConstants.HOST;
 import static io.harness.connector.ConnectorTestConstants.ORG_IDENTIFIER;
 import static io.harness.connector.ConnectorTestConstants.PROJECT_IDENTIFIER;
-import static io.harness.connector.ConnectorTestConstants.SSK_KEY_REF_IDENTIFIER;
 import static io.harness.connector.ConnectorTestConstants.SSK_KEY_REF_IDENTIFIER_WITH_ACCOUNT_SCOPE;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -25,8 +24,6 @@ import io.harness.connector.ConnectorValidationResult;
 import io.harness.connector.PhysicalDataCenterConnectorValidationResult;
 import io.harness.delegate.beans.connector.pdcconnector.HostDTO;
 import io.harness.delegate.beans.connector.pdcconnector.PhysicalDataCenterConnectorDTO;
-import io.harness.encryption.Scope;
-import io.harness.encryption.SecretRefData;
 import io.harness.ng.core.dto.ErrorDetail;
 import io.harness.ng.validator.dto.HostValidationDTO;
 import io.harness.ng.validator.service.api.NGHostValidationService;
@@ -116,9 +113,6 @@ public class PhysicalDataCenterConnectorValidatorTest extends CategoryTest {
   private PhysicalDataCenterConnectorDTO getPhysicalDataCenterConnectorDTO() {
     HostDTO hostDTO = new HostDTO();
     hostDTO.setHostName(HOST);
-    return PhysicalDataCenterConnectorDTO.builder()
-        .hosts(Collections.singletonList(hostDTO))
-        .sshKeyRef(SecretRefData.builder().identifier(SSK_KEY_REF_IDENTIFIER).scope(Scope.ACCOUNT).build())
-        .build();
+    return PhysicalDataCenterConnectorDTO.builder().hosts(Collections.singletonList(hostDTO)).build();
   }
 }

@@ -13,7 +13,6 @@ import static io.harness.connector.ConnectorTestConstants.CONNECTOR_NAME;
 import static io.harness.connector.ConnectorTestConstants.HOST_WITH_PORT;
 import static io.harness.connector.ConnectorTestConstants.ORG_IDENTIFIER;
 import static io.harness.connector.ConnectorTestConstants.PROJECT_IDENTIFIER;
-import static io.harness.connector.ConnectorTestConstants.SECRET_IDENTIFIER;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -29,7 +28,6 @@ import io.harness.delegate.beans.executioncapability.ExecutionCapability;
 import io.harness.delegate.beans.executioncapability.SelectorCapability;
 import io.harness.delegate.task.mixin.SocketConnectivityCapabilityGenerator;
 import io.harness.delegate.task.utils.PhysicalDataCenterUtils;
-import io.harness.encryption.SecretRefData;
 import io.harness.rule.Owner;
 import io.harness.rule.OwnerRule;
 
@@ -85,7 +83,6 @@ public class PhysicalDataCenterConnectorValidationParamsProviderTest extends Cat
     return PhysicalDataCenterConnectorDTO.builder()
         .hosts(Collections.singletonList(hostDTO))
         .delegateSelectors(DELEGATE_SELECTORS)
-        .sshKeyRef(SecretRefData.builder().identifier(SECRET_IDENTIFIER).build())
         .build();
   }
 }
