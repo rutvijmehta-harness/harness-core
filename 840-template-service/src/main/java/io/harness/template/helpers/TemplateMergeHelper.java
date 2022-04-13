@@ -414,7 +414,7 @@ public class TemplateMergeHelper {
     return resMap;
   }
 
-  public void refreshTemplates(String accountId, String orgId, String projectId, String yaml) {
+  public String refreshTemplates(String accountId, String orgId, String projectId, String yaml) {
     if (isEmpty(yaml)) {
       throw new NGTemplateException("Yaml to be refreshed cannot be empty.");
     }
@@ -425,15 +425,15 @@ public class TemplateMergeHelper {
       log.error("Could not convert yaml to JsonNode. Yaml:\n" + yaml, e);
       throw new NGTemplateException("Could not convert yaml to JsonNode: " + e.getMessage());
     }
-    refreshTemplateInYaml(accountId, orgId, projectId, yamlNode);
+    return refreshTemplateInYaml(accountId, orgId, projectId, yamlNode);
   }
 
-  private void refreshTemplateInYaml(String accountId, String orgId, String projectId, YamlNode yamlNode) {
+  private String refreshTemplateInYaml(String accountId, String orgId, String projectId, YamlNode yamlNode) {
     for (YamlField childYamlField : yamlNode.fields()) {
       String fieldName = childYamlField.getName();
       JsonNode value = childYamlField.getNode().getCurrJsonNode();
       if (isTemplatePresent(fieldName, value)) {
-        // main function
+        function(value);
         continue;
       }
       if (value.isValueNode() || YamlUtils.checkIfNodeIsArrayWithPrimitiveTypes(value)) {
@@ -441,6 +441,13 @@ public class TemplateMergeHelper {
       } else {
       }
     }
+    return null;
+  }
+
+  private void function(JsonNode value) {
+    JsonNode templateReference = value.get(TEMPLATE_REF);
+    JsonNode versionLabel = value.get(TEMPLATE_VERSION_LABEL);
+    JsonNode templateInputs = value.get(TEMPLATE_INPUTS);
   }
 
   private Object validateTemplateInputsInArray(String accountId, String orgId, String projectId, YamlNode yamlNode,

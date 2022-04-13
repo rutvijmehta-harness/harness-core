@@ -35,12 +35,17 @@ import io.harness.gitsync.interceptor.GitEntityUpdateInfoDTO;
 import io.harness.ng.core.dto.ErrorDTO;
 import io.harness.ng.core.dto.FailureDTO;
 import io.harness.ng.core.dto.ResponseDTO;
-import io.harness.ng.core.template.*;
+import io.harness.ng.core.template.RefreshRequestDTO;
+import io.harness.ng.core.template.RefreshResponseDTO;
+import io.harness.ng.core.template.TemplateApplyRequestDTO;
+import io.harness.ng.core.template.TemplateListType;
+import io.harness.ng.core.template.TemplateMergeResponseDTO;
+import io.harness.ng.core.template.TemplateReferenceSummary;
+import io.harness.ng.core.template.TemplateSummaryResponseDTO;
 import io.harness.pms.contracts.service.VariableMergeResponseProto;
 import io.harness.pms.contracts.service.VariablesServiceGrpc.VariablesServiceBlockingStub;
 import io.harness.pms.contracts.service.VariablesServiceRequest;
 import io.harness.pms.mappers.VariablesResponseDtoMapper;
-import io.harness.pms.merger.helpers.RuntimeInputFormHelper;
 import io.harness.pms.variables.VariableMergeServiceResponse;
 import io.harness.security.annotations.NextGenManagerAuth;
 import io.harness.template.TemplateFilterPropertiesDTO;
@@ -622,10 +627,14 @@ public class NGTemplateResource {
   @Path("/refresh")
   @ApiOperation(value = "", nickname = "refresh")
   @Hidden
-  public void refresh(@NotNull @QueryParam(NGCommonEntityConstants.ACCOUNT_KEY) @AccountIdentifier String accountId,
+  public RefreshResponseDTO refresh(
+      @NotNull @QueryParam(NGCommonEntityConstants.ACCOUNT_KEY) @AccountIdentifier String accountId,
       @QueryParam(NGCommonEntityConstants.ORG_KEY) @OrgIdentifier String orgId,
       @QueryParam(NGCommonEntityConstants.PROJECT_KEY) @ProjectIdentifier String projectId,
       @BeanParam GitEntityFindInfoDTO gitEntityBasicInfo, RefreshRequestDTO refreshRequest) {
-    templateMergeHelper.refreshTemplates(accountId, orgId, projectId, refreshRequest.getYaml());
+    String refreshedYaml = templateMergeHelper.refreshTemplates(accountId, orgId, projectId, refreshRequest.getYaml());
+    RefreshResponseDTO refreshResponse = RefreshResponseDTO.builder().refreshedYaml(refreshedYaml).build();
+
+    return refreshResponse;
   }
 }
