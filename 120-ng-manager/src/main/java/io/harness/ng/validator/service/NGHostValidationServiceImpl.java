@@ -36,7 +36,6 @@ import io.harness.delegate.task.utils.PhysicalDataCenterConstants;
 import io.harness.delegate.utils.TaskSetupAbstractionHelper;
 import io.harness.encryption.SecretRefData;
 import io.harness.encryption.SecretRefHelper;
-import io.harness.exception.DelegateServiceDriverException;
 import io.harness.exception.InvalidArgumentsException;
 import io.harness.exception.InvalidRequestException;
 import io.harness.exception.WingsException;
