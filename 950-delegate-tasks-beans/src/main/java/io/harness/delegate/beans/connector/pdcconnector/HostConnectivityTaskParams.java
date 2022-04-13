@@ -20,7 +20,6 @@ import io.harness.expression.ExpressionEvaluator;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -32,7 +31,6 @@ import lombok.experimental.SuperBuilder;
 @SuperBuilder
 public class HostConnectivityTaskParams
     extends ConnectorTaskParams implements TaskParameters, ExecutionCapabilityDemander {
-  private Set<String> delegateSelectors;
   private String hostName;
   private int port;
   @Builder.Default private int socketTimeout = DEFAULT_HOST_SOCKET_TIMEOUT_MS;

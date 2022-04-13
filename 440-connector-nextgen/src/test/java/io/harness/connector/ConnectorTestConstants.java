@@ -23,6 +23,7 @@ public final class ConnectorTestConstants {
   public static final String SECRET_IDENTIFIER = "secretIdentifier";
   public static final String SSK_KEY_REF_IDENTIFIER = "sskKeyRefIdentifier";
   public static final String SSK_KEY_REF_IDENTIFIER_WITH_ACCOUNT_SCOPE = "account.sskKeyRefIdentifier";
+  public static final String DELEGATE_SELECTOR = "delegate_selector_group";
 
   public static final String HOST = "1.1.1.1";
   public static final String HOST_WITH_PORT = "1.1.1.1:8080";

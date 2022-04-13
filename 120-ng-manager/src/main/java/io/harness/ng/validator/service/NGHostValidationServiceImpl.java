@@ -36,8 +36,11 @@ import io.harness.delegate.task.utils.PhysicalDataCenterConstants;
 import io.harness.delegate.utils.TaskSetupAbstractionHelper;
 import io.harness.encryption.SecretRefData;
 import io.harness.encryption.SecretRefHelper;
+import io.harness.exception.DelegateServiceDriverException;
 import io.harness.exception.InvalidArgumentsException;
 import io.harness.exception.InvalidRequestException;
+import io.harness.exception.WingsException;
+import io.harness.exception.exceptionmanager.ExceptionManager;
 import io.harness.manage.ManagedExecutorService;
 import io.harness.ng.core.BaseNGAccess;
 import io.harness.ng.core.api.NGSecretServiceV2;
@@ -66,6 +69,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
@@ -80,6 +84,7 @@ public class NGHostValidationServiceImpl implements NGHostValidationService {
   @Inject private NGSecretServiceV2 ngSecretServiceV2;
   @Inject private TaskSetupAbstractionHelper taskSetupAbstractionHelper;
   @Inject private DelegateGrpcClientWrapper delegateGrpcClientWrapper;
+  @Inject ExceptionManager exceptionManager;
   private final Executor hostsConnectivityExecutor = new ManagedExecutorService(Executors.newFixedThreadPool(4));
   private final Executor hostsSSHExecutor = new ManagedExecutorService(Executors.newFixedThreadPool(4));
 
@@ -94,16 +99,9 @@ public class NGHostValidationServiceImpl implements NGHostValidationService {
     CompletableFutures<HostValidationDTO> validateHostSocketConnectivityTasks =
         new CompletableFutures<>(hostsConnectivityExecutor);
     for (String hostName : limitHosts(hosts)) {
-      validateHostSocketConnectivityTasks.supplyAsyncExceptionally(
-          ()
-              -> validateHostConnectivity(
-                  hostName, accountIdentifier, orgIdentifier, projectIdentifier, delegateSelectors),
-          ex
-          -> HostValidationDTO.builder()
-                 .host(hostName)
-                 .status(FAILED)
-                 .error(buildErrorDetailsWithMsg(ex.getMessage(), hostName))
-                 .build());
+      validateHostSocketConnectivityTasks.supplyAsync(()
+                                                          -> validateHostConnectivity(hostName, accountIdentifier,
+                                                              orgIdentifier, projectIdentifier, delegateSelectors));
     }
 
     return executeParallelTasks(validateHostSocketConnectivityTasks);
@@ -169,15 +167,9 @@ public class NGHostValidationServiceImpl implements NGHostValidationService {
 
     CompletableFutures<HostValidationDTO> validateSSHHostTasks = new CompletableFutures<>(hostsSSHExecutor);
     for (String hostName : limitHosts(hosts)) {
-      validateSSHHostTasks.supplyAsyncExceptionally(()
-                                                        -> validateSSHHost(hostName, accountIdentifier, orgIdentifier,
-                                                            projectIdentifier, secretIdentifierWithScope),
-          ex
-          -> HostValidationDTO.builder()
-                 .host(hostName)
-                 .status(FAILED)
-                 .error(buildErrorDetailsWithMsg(ex.getMessage(), hostName))
-                 .build());
+      validateSSHHostTasks.supplyAsync(()
+                                           -> validateSSHHost(hostName, accountIdentifier, orgIdentifier,
+                                               projectIdentifier, secretIdentifierWithScope));
     }
 
     return executeParallelTasks(validateSSHHostTasks);
@@ -262,8 +254,8 @@ public class NGHostValidationServiceImpl implements NGHostValidationService {
     } catch (InterruptedException ex) {
       Thread.currentThread().interrupt();
       throw new InvalidRequestException(ex.getMessage(), USER);
-    } catch (ExecutionException ex) {
-      throw new InvalidRequestException(ex.getMessage(), USER);
+    } catch (ExecutionException | CompletionException ex) {
+      throw exceptionManager.processException(ex, WingsException.ExecutionContext.MANAGER, log);
     }
   }
 

@@ -10,7 +10,6 @@ package io.harness.connector.mappers.pdcconnector;
 import static io.harness.annotations.dev.HarnessTeam.CDP;
 import static io.harness.connector.ConnectorTestConstants.HOST_NAME_1;
 import static io.harness.connector.ConnectorTestConstants.HOST_NAME_2;
-import static io.harness.connector.ConnectorTestConstants.SSK_KEY_REF_IDENTIFIER_WITH_ACCOUNT_SCOPE;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -47,7 +46,6 @@ public class PhysicalDataCenterDTOToEntityTest extends CategoryTest {
         PhysicalDataCenterConnectorDTO.builder().hosts(getHostDTOs()).build());
 
     assertThat(physicalDataCenterConnector).isNotNull();
-    assertThat(physicalDataCenterConnector.getSshKeyRef()).isEqualTo(SSK_KEY_REF_IDENTIFIER_WITH_ACCOUNT_SCOPE);
     assertThat(physicalDataCenterConnector.getHosts().size()).isEqualTo(2);
 
     Host host1 = getHost(HOST_NAME_1);
