@@ -10,6 +10,7 @@ package io.harness.connector.heartbeat;
 import static io.harness.annotations.dev.HarnessTeam.CDP;
 import static io.harness.connector.ConnectorTestConstants.ACCOUNT_IDENTIFIER;
 import static io.harness.connector.ConnectorTestConstants.CONNECTOR_NAME;
+import static io.harness.connector.ConnectorTestConstants.HOST_NAME;
 import static io.harness.connector.ConnectorTestConstants.HOST_WITH_PORT;
 import static io.harness.connector.ConnectorTestConstants.ORG_IDENTIFIER;
 import static io.harness.connector.ConnectorTestConstants.PROJECT_IDENTIFIER;
@@ -72,7 +73,7 @@ public class PhysicalDataCenterConnectorValidationParamsProviderTest extends Cat
     assertThat(executionCapabilityList).isNotNull();
     assertThat(executionCapabilityList)
         .contains(SocketConnectivityCapabilityGenerator.buildSocketConnectivityCapability(
-            HOST_WITH_PORT, PhysicalDataCenterUtils.getPortOrSSHDefault(HOST_WITH_PORT)));
+            HOST_NAME, PhysicalDataCenterUtils.getPortOrSSHDefault(HOST_WITH_PORT)));
     assertThat(executionCapabilityList)
         .contains(SelectorCapability.builder().selectors(DELEGATE_SELECTORS).selectorOrigin("connector").build());
   }

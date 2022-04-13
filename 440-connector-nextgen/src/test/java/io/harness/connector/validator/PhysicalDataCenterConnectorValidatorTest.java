@@ -10,7 +10,7 @@ package io.harness.connector.validator;
 import static io.harness.connector.ConnectorTestConstants.ACCOUNT_IDENTIFIER;
 import static io.harness.connector.ConnectorTestConstants.CONNECTOR_IDENTIFIER;
 import static io.harness.connector.ConnectorTestConstants.DELEGATE_SELECTOR;
-import static io.harness.connector.ConnectorTestConstants.HOST;
+import static io.harness.connector.ConnectorTestConstants.HOST_NAME;
 import static io.harness.connector.ConnectorTestConstants.ORG_IDENTIFIER;
 import static io.harness.connector.ConnectorTestConstants.PROJECT_IDENTIFIER;
 
@@ -55,7 +55,7 @@ public class PhysicalDataCenterConnectorValidatorTest extends CategoryTest {
         HostValidationDTO.builder().host("host2").status(HostValidationDTO.HostValidationStatus.SUCCESS).build());
     doReturn(validationHostsSuccess)
         .when(hostValidationService)
-        .validateHostsConnectivity(Collections.singletonList(HOST), ACCOUNT_IDENTIFIER, ORG_IDENTIFIER,
+        .validateHostsConnectivity(Collections.singletonList(HOST_NAME), ACCOUNT_IDENTIFIER, ORG_IDENTIFIER,
             PROJECT_IDENTIFIER, Sets.newHashSet(DELEGATE_SELECTOR));
 
     ConnectorValidationResult validationResult =
@@ -88,7 +88,7 @@ public class PhysicalDataCenterConnectorValidatorTest extends CategoryTest {
             .build());
     doReturn(validationHosts)
         .when(hostValidationService)
-        .validateHostsConnectivity(Collections.singletonList(HOST), ACCOUNT_IDENTIFIER, ORG_IDENTIFIER,
+        .validateHostsConnectivity(Collections.singletonList(HOST_NAME), ACCOUNT_IDENTIFIER, ORG_IDENTIFIER,
             PROJECT_IDENTIFIER, Sets.newHashSet(DELEGATE_SELECTOR));
 
     ConnectorValidationResult validationResult =
@@ -113,7 +113,7 @@ public class PhysicalDataCenterConnectorValidatorTest extends CategoryTest {
 
   private PhysicalDataCenterConnectorDTO getPhysicalDataCenterConnectorDTO() {
     HostDTO hostDTO = new HostDTO();
-    hostDTO.setHostName(HOST);
+    hostDTO.setHostName(HOST_NAME);
     return PhysicalDataCenterConnectorDTO.builder()
         .hosts(Collections.singletonList(hostDTO))
         .delegateSelectors(Sets.newHashSet(DELEGATE_SELECTOR))
