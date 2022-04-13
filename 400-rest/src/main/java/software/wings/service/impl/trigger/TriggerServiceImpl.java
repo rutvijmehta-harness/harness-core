@@ -1186,6 +1186,7 @@ public class TriggerServiceImpl implements TriggerService {
         overrideTriggerVariables(trigger, executionArgs, pipeline.getPipelineVariables());
 
     List<Variable> pipelineVariables = pipeline.getPipelineVariables();
+    validateWorkflowVariable(triggerWorkflowVariableValues, pipelineVariables);
     String envId = null;
     String templatizedEnvName = getTemplatizedEnvVariableName(pipelineVariables);
     if (templatizedEnvName != null) {
