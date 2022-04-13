@@ -163,17 +163,8 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.google.inject.name.Named;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.Objects;
-import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.regex.PatternSyntaxException;
 import java.util.stream.Collectors;
@@ -1351,11 +1342,13 @@ public class TriggerServiceImpl implements TriggerService {
     Map<String, String> triggerWorkflowVariableValues =
         overrideTriggerVariables(trigger, executionArgs, workflow.getOrchestrationWorkflow().getUserVariables());
 
+    List<Variable> workflowVariables = workflow.getOrchestrationWorkflow().getUserVariables();
+    validateWorkflowVariable(executionArgs.getWorkflowVariables(), workflowVariables);
+
     String envId = null;
     if (BUILD == workflow.getOrchestrationWorkflow().getOrchestrationWorkflowType()) {
       executionArgs.setArtifacts(new ArrayList<>());
     } else {
-      List<Variable> workflowVariables = workflow.getOrchestrationWorkflow().getUserVariables();
       if (workflow.checkEnvironmentTemplatized()) {
         String templatizedEnvName = getTemplatizedEnvVariableName(workflowVariables);
         String envNameOrId = triggerWorkflowVariableValues.get(templatizedEnvName);
@@ -1410,6 +1403,18 @@ public class TriggerServiceImpl implements TriggerService {
           workflowExecutionService.triggerEnvExecution(trigger.getAppId(), envId, executionArgs, trigger);
     }
     return workflowExecution;
+  }
+
+  private void validateWorkflowVariable(Map<String, String> workflowVariables, List<Variable> allowedValues) {
+    for (Variable x : allowedValues) {
+      if (isNotEmpty(x.getAllowedValues())) {
+        List<String> allowedVals = Arrays.asList(x.getAllowedValues().split(","));
+        if (!allowedVals.contains(workflowVariables.get(x.getName()))) {
+          throw new WingsException(
+              "Trigger rejected because a passed workflow variable was not present in allowed values");
+        }
+      }
+    }
   }
 
   private void validateRequiredArtifacts(
