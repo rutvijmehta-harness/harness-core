@@ -41,27 +41,30 @@ public class ConnectorInstrumentationHelper extends InstrumentationHelper {
   String ERROR_SUMMARY = "error_summary";
   String ERROR_DETAILS = "error_details";
   String DELEGATE_ID = "delegate_id";
+  String TEST_CONNECTION_SUCCESS = "test_connection_success";
+  String TEST_CONNECTION_FAILURE = "test_connection_failure";
 
   public CompletableFuture sendConnectorCreateEvent(ConnectorInfoDTO connector, String accountId) {
     try {
       if (EmptyPredicate.isNotEmpty(accountId) || !accountId.equals(GLOBAL_ACCOUNT_ID)) {
-        HashMap<String, Object> map = new HashMap<>();
+        HashMap<String, Object> eventPropertiesMap = new HashMap<>();
         String projectIdentifier = connector.getProjectIdentifier();
         String orgIdentifier = connector.getOrgIdentifier();
         if (projectIdentifier != null) {
-          map.put(CONNECTOR_PROJECT, projectIdentifier);
+          eventPropertiesMap.put(CONNECTOR_PROJECT, projectIdentifier);
         }
         if (orgIdentifier != null) {
-          map.put(CONNECTOR_ORG, orgIdentifier);
+          eventPropertiesMap.put(CONNECTOR_ORG, orgIdentifier);
         }
-        map.put(ACCOUNT_ID, accountId);
-        map.put(CONNECTOR_ID, connector.getIdentifier());
-        map.put(CONNECTOR_TYPE, connector.getConnectorType());
-        map.put(CONNECTOR_NAME, connector.getName());
+        eventPropertiesMap.put(ACCOUNT_ID, accountId);
+        eventPropertiesMap.put(CONNECTOR_ID, connector.getIdentifier());
+        eventPropertiesMap.put(CONNECTOR_TYPE, connector.getConnectorType());
+        eventPropertiesMap.put(CONNECTOR_NAME, connector.getName());
         String userId = getUserId();
         return CompletableFuture.runAsync(
             ()
-                -> telemetryReporter.sendTrackEvent("connector_creation_finished", userId, accountId, map,
+                -> telemetryReporter.sendTrackEvent("connector_creation_finished", userId, accountId,
+                    eventPropertiesMap,
                     ImmutableMap.<Destination, Boolean>builder()
                         .put(Destination.AMPLITUDE, true)
                         .put(Destination.ALL, false)
@@ -81,19 +84,19 @@ public class ConnectorInstrumentationHelper extends InstrumentationHelper {
       String orgIdentifier, String projectIdentifier, String connectorIdentifier, String accountId) {
     try {
       if (EmptyPredicate.isNotEmpty(accountId) || !accountId.equals(GLOBAL_ACCOUNT_ID)) {
-        HashMap<String, Object> map = new HashMap<>();
+        HashMap<String, Object> eventPropertiesMap = new HashMap<>();
         if (projectIdentifier != null) {
-          map.put(CONNECTOR_PROJECT, projectIdentifier);
+          eventPropertiesMap.put(CONNECTOR_PROJECT, projectIdentifier);
         }
         if (orgIdentifier != null) {
-          map.put(CONNECTOR_ORG, orgIdentifier);
+          eventPropertiesMap.put(CONNECTOR_ORG, orgIdentifier);
         }
-        map.put(ACCOUNT_ID, accountId);
-        map.put(CONNECTOR_ID, connectorIdentifier);
+        eventPropertiesMap.put(ACCOUNT_ID, accountId);
+        eventPropertiesMap.put(CONNECTOR_ID, connectorIdentifier);
         String userId = getUserId();
         return CompletableFuture.runAsync(
             ()
-                -> telemetryReporter.sendTrackEvent("connector_deletion", userId, accountId, map,
+                -> telemetryReporter.sendTrackEvent("connector_deletion", userId, accountId, eventPropertiesMap,
                     ImmutableMap.<Destination, Boolean>builder()
                         .put(Destination.AMPLITUDE, true)
                         .put(Destination.ALL, false)
@@ -114,35 +117,35 @@ public class ConnectorInstrumentationHelper extends InstrumentationHelper {
     try {
       String eventMessage;
       if (EmptyPredicate.isNotEmpty(accountId) || !accountId.equals(GLOBAL_ACCOUNT_ID)) {
-        HashMap<String, Object> map = new HashMap<>();
+        HashMap<String, Object> eventPropertiesMap = new HashMap<>();
         String projectIdentifier = connector.getProjectIdentifier();
         String orgIdentifier = connector.getOrgIdentifier();
         if (projectIdentifier != null) {
-          map.put(CONNECTOR_PROJECT, projectIdentifier);
+          eventPropertiesMap.put(CONNECTOR_PROJECT, projectIdentifier);
         }
         if (orgIdentifier != null) {
-          map.put(CONNECTOR_ORG, orgIdentifier);
+          eventPropertiesMap.put(CONNECTOR_ORG, orgIdentifier);
         }
         String delegateId = connectorValidationResult.getDelegateId();
         if (delegateId != null) {
-          map.put(DELEGATE_ID, delegateId);
+          eventPropertiesMap.put(DELEGATE_ID, delegateId);
         }
-        map.put(ACCOUNT_ID, accountId);
-        map.put(CONNECTOR_ID, connector.getIdentifier());
-        map.put(CONNECTOR_TYPE, connector.getConnectorType());
-        map.put(CONNECTOR_NAME, connector.getName());
-        map.put(CONNECTIVITY_STATUS, connectorValidationResult.getStatus());
+        eventPropertiesMap.put(ACCOUNT_ID, accountId);
+        eventPropertiesMap.put(CONNECTOR_ID, connector.getIdentifier());
+        eventPropertiesMap.put(CONNECTOR_TYPE, connector.getConnectorType());
+        eventPropertiesMap.put(CONNECTOR_NAME, connector.getName());
+        eventPropertiesMap.put(CONNECTIVITY_STATUS, connectorValidationResult.getStatus());
         if (connectorValidationResult.getStatus() == ConnectivityStatus.SUCCESS) {
-          eventMessage = "test_connection_success";
+          eventMessage = TEST_CONNECTION_SUCCESS;
         } else {
-          eventMessage = "test_connection_failure";
-          map.put(ERROR_SUMMARY, connectorValidationResult.getErrorSummary());
-          map.put(ERROR_DETAILS, connectorValidationResult.getErrors());
+          eventMessage = TEST_CONNECTION_FAILURE;
+          eventPropertiesMap.put(ERROR_SUMMARY, connectorValidationResult.getErrorSummary());
+          eventPropertiesMap.put(ERROR_DETAILS, connectorValidationResult.getErrors());
         }
         String userId = getUserId();
         return CompletableFuture.runAsync(
             ()
-                -> telemetryReporter.sendTrackEvent(eventMessage, userId, accountId, map,
+                -> telemetryReporter.sendTrackEvent(eventMessage, userId, accountId, eventPropertiesMap,
                     ImmutableMap.<Destination, Boolean>builder()
                         .put(Destination.AMPLITUDE, true)
                         .put(Destination.ALL, false)
