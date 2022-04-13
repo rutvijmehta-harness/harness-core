@@ -75,7 +75,6 @@ import software.wings.beans.User;
 import software.wings.beans.User.UserKeys;
 import software.wings.beans.UserGroupEntityReference;
 import software.wings.beans.UserInvite;
-import software.wings.beans.Workflow;
 import software.wings.beans.notification.NotificationSettings;
 import software.wings.beans.security.AccountPermissions;
 import software.wings.beans.security.AppPermission;
@@ -103,7 +102,6 @@ import software.wings.service.intfc.AuthService;
 import software.wings.service.intfc.SSOSettingService;
 import software.wings.service.intfc.UserGroupService;
 import software.wings.service.intfc.UserService;
-import software.wings.service.intfc.WorkflowService;
 import software.wings.service.intfc.pagerduty.PagerDutyService;
 
 import com.google.common.collect.Sets;
@@ -161,7 +159,6 @@ public class UserGroupServiceImpl implements UserGroupService {
   @Inject private CCMSettingService ccmSettingService;
   @Inject @Named("BackgroundJobScheduler") private PersistentScheduler jobScheduler;
   @Inject @Named(RbacFeature.FEATURE_NAME) private UsageLimitedFeature rbacFeature;
-  @Inject private WorkflowService workflowService;
   @Inject private FeatureFlagService featureFlagService;
   @Inject private LdapGroupSyncJobHelper ldapGroupSyncJobHelper;
   @Inject private AppService appService;
@@ -797,24 +794,13 @@ public class UserGroupServiceImpl implements UserGroupService {
     if (!forceDelete && UserGroupUtils.isAdminUserGroup(userGroup)) {
       return false;
     }
-    PageRequest<Workflow> request =
-        (PageRequest<Workflow>) aPageRequest()
-            .addFilter(Workflow.WorkflowKeys.accountId, Operator.EQ, accountId)
-            .addFilter("orchestration.notificationRules.userGroupIds", Operator.CONTAINS, userGroupId)
-            .build();
-
-    List<Workflow> workflows = workflowService.listWorkflows(request);
-    if (!workflows.isEmpty()) {
-      throw new InvalidRequestException(
-          "This userGroup is being referenced in notification rules in WORKFLOW(s). Please make sure to remove the references to delete this userGroup.");
-    }
     Query<UserGroup> userGroupQuery = wingsPersistence.createQuery(UserGroup.class)
                                           .filter(UserGroupKeys.accountId, accountId)
                                           .filter(ID_KEY, userGroupId);
     boolean deleted = wingsPersistence.delete(userGroupQuery);
     if (deleted) {
       evictUserPermissionInfoCacheForUserGroup(userGroup);
-      //      executors.submit(() -> userGroupDeleteEventHandler.handleUserGroupDelete(accountId, userGroupId));
+      executors.submit(() -> userGroupDeleteEventHandler.handleUserGroupDelete(accountId, userGroupId));
       auditServiceHelper.reportDeleteForAuditingUsingAccountId(accountId, userGroup);
       log.info("Auditing deletion of userGroupId={} and accountId={}", userGroup.getUuid(), accountId);
     }
