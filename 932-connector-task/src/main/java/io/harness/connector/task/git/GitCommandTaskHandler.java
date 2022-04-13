@@ -60,7 +60,7 @@ public class GitCommandTaskHandler {
   @Inject private NGErrorHelper ngErrorHelper;
   @Inject private ScmDelegateClient scmDelegateClient;
   @Inject private ScmServiceClient scmServiceClient;
-  @Inject ExceptionManager exceptionManager;
+  @Inject private ExceptionManager exceptionManager;
   @Inject(optional = true) private ScmClient scmClient;
 
   public ConnectorValidationResult validateGitCredentials(GitConfigDTO gitConnector, ScmConnector scmConnector,

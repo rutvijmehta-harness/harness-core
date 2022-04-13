@@ -73,7 +73,7 @@ public class GitCommandTaskHandlerTest extends CategoryTest {
   @Mock private ScmServiceClient scmServiceClient;
 
   @Spy @InjectMocks GitCommandTaskHandler gitCommandTaskHandler;
-  @Spy @InjectMocks private ExceptionManager exceptionManager;
+  @Spy @InjectMocks ExceptionManager exceptionManager;
 
   private static final long SIMULATED_REQUEST_TIME_MILLIS = 1609459200000L;
   private static final String ACCOUNT_IDENTIFIER = generateUuid();

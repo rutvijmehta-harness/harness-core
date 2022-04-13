@@ -39,6 +39,6 @@ public class ExceptionModule extends AbstractModule {
     JexlRuntimeExceptionHandler.exceptions().forEach(
         exception -> exceptionHandlerMapBinder.addBinding(exception).to(JexlRuntimeExceptionHandler.class));
     JGitExceptionHandler.exceptions().forEach(
-            exception -> exceptionHandlerMapBinder.addBinding(exception).to(JGitExceptionHandler.class));
+        exception -> exceptionHandlerMapBinder.addBinding(exception).to(JGitExceptionHandler.class));
   }
 }
