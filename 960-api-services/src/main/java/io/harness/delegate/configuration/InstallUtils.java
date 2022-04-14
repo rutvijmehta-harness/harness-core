@@ -10,19 +10,27 @@ package io.harness.delegate.configuration;
 import static io.harness.annotations.dev.HarnessTeam.DEL;
 import static io.harness.data.structure.EmptyPredicate.isNotEmpty;
 import static io.harness.data.structure.HarnessStringUtils.join;
+import static io.harness.delegate.configuration.ClientTool.CF;
+import static io.harness.delegate.configuration.ClientTool.CHARTMUSEUM;
+import static io.harness.delegate.configuration.ClientTool.GO_TEMPLATE;
+import static io.harness.delegate.configuration.ClientTool.HARNESS_PYWINRM;
+import static io.harness.delegate.configuration.ClientTool.HELM;
+import static io.harness.delegate.configuration.ClientTool.KUBECTL;
+import static io.harness.delegate.configuration.ClientTool.KUSTOMIZE;
+import static io.harness.delegate.configuration.ClientTool.OC;
+import static io.harness.delegate.configuration.ClientTool.SCM;
+import static io.harness.delegate.configuration.ClientTool.TERRAFORM_CONFIG_INSPECT;
 import static io.harness.filesystem.FileIo.createDirectoryIfDoesNotExist;
 import static io.harness.network.Http.getBaseUrl;
 
 import static java.lang.String.format;
 
 import io.harness.annotations.dev.OwnedBy;
-import io.harness.exception.ProcessExecutionException;
 
 import com.google.common.annotations.VisibleForTesting;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -45,117 +53,94 @@ public class InstallUtils {
   private static final String defaultKubectlVersion = "v1.13.2";
   private static final String newKubectlVersion = "v1.19.2";
   private static final List<String> kubectlVersions = Arrays.asList(defaultKubectlVersion, newKubectlVersion);
-  private static final String kubectlBaseDir = "./client-tools/kubectl/";
 
   private static final String goTemplateClientVersion = "v0.4";
-  private static final String goTemplateClientBaseDir = "./client-tools/go-template/";
 
   private static final String harnessPywinrmVersion = "v0.4-dev";
-  private static final String harnessPywinrmBaseDir = "./client-tools/harness-pywinrm/";
 
+  private static final String helm3VersionNew = "v3.8.0";
   static final String helm3Version = "v3.1.2";
-  static final String helm3VersionNew = "v3.8.0";
   static final String helm2Version = "v2.13.1";
 
   private static final List<String> helmVersions = Arrays.asList(helm2Version, helm3Version, helm3VersionNew);
 
-  private static final String helmBaseDir = "./client-tools/helm/";
-
   private static final String chartMuseumVersionOld = "v0.8.2";
-  private static final String chartMuseumVersionNew = "v0.12.0"; // updated version from v0.8.2 to v0.12.0
-  // to enable IRSA for chartmuseum
+  private static final String chartMuseumVersionNew = "v0.12.0";
   private static final List<String> chartMuseumVersions = Arrays.asList(chartMuseumVersionOld, chartMuseumVersionNew);
   private static final Map<String, String> chartMuseumPaths = new HashMap<>();
-  static {
-    chartMuseumPaths.put(chartMuseumVersionOld, "chartMuseum");
-    chartMuseumPaths.put(chartMuseumVersionNew, "chartMuseum");
-  }
-
-  private static final String chartMuseumBaseDir = "./client-tools/chartmuseum/";
 
   private static final String ocVersion = "v4.2.16";
-  private static final String ocBaseDir = "./client-tools/oc/";
 
-  private static Map<String, String> kubectlPaths = new HashMap<>();
-  private static Map<String, String> kustomizePaths = new HashMap<>();
+  private static final Map<String, String> kubectlPaths = new HashMap<>();
+  private static final Map<String, String> kustomizePaths = new HashMap<>();
 
-  private static String kustomizeBaseDir = "./client-tools/kustomize/";
-  private static String kustomizeVersionOld = "v3.5.4";
-  private static String kustomizeVersionNew = "v4.0.0";
-  public static String kustomizePath = "kustomize";
+  private static final String kustomizeVersionOld = "v3.5.4";
+  private static final String kustomizeVersionNew = "v4.0.0";
+  private static String kustomizePath = "kustomize";
   public static boolean isCustomKustomizePath;
 
   private static final List<String> kustomizeVersions = Arrays.asList(kustomizeVersionOld, kustomizeVersionNew);
 
   private static String goTemplateToolPath = "go-template";
   private static String harnessPywinrmToolPath = "harness-pywinrm";
-  private static Map<String, String> helmPaths = new HashMap<>();
+  private static final Map<String, String> helmPaths = new HashMap<>();
 
   static {
-    helmPaths.put(helm2Version, "helm");
-    helmPaths.put(helm3Version, "helm");
-    helmPaths.put(helm3VersionNew, "helm");
-    kubectlPaths.put(defaultKubectlVersion, "kubectl");
-    kubectlPaths.put(newKubectlVersion, "kubectl");
-    kustomizePaths.put(kustomizeVersionOld, "kustomize");
-    kustomizePaths.put(kustomizeVersionNew, "kustomize");
+    helmPaths.put(helm2Version, HELM.getBinaryName());
+    helmPaths.put(helm3Version, HELM.getBinaryName());
+    helmPaths.put(helm3VersionNew, HELM.getBinaryName());
+    kubectlPaths.put(defaultKubectlVersion, KUBECTL.getBinaryName());
+    kubectlPaths.put(newKubectlVersion, KUBECTL.getBinaryName());
+    kustomizePaths.put(kustomizeVersionOld, KUSTOMIZE.getBinaryName());
+    kustomizePaths.put(kustomizeVersionNew, KUSTOMIZE.getBinaryName());
+    chartMuseumPaths.put(chartMuseumVersionOld, CHARTMUSEUM.getBinaryName());
+    chartMuseumPaths.put(chartMuseumVersionNew, CHARTMUSEUM.getBinaryName());
   }
 
-  private static String chartMuseumPath = "chartmuseum";
   private static String ocPath = "oc";
 
-  private static final String terraformConfigInspectBaseDir = "./client-tools/tf-config"
-      + "-inspect";
-  private static final String terraformConfigInspectBinary = "terraform-config-inspect";
   private static final String terraformConfigInspectCurrentVersion = "v1.0";
-  private static final String terraformConfigInspectLatestVersion = "v1.1"; // This is not the
-  // version provided by Hashicorp because currently they do not maintain releases as such
+  // This is not the version provided by Hashicorp because currently they do not maintain releases as such
+  private static final String terraformConfigInspectLatestVersion = "v1.1";
   private static final List<String> terraformConfigInspectVersions =
       Arrays.asList(terraformConfigInspectCurrentVersion, terraformConfigInspectLatestVersion);
 
-  private static final String scmBaseDir = "./client-tools/scm/";
-  private static final String scmBinary = "scm";
   private static final String defaultScmVersion = "98fc345b";
 
-  private static final String KUBECTL_CDN_PATH = "public/shared/tools/kubectl/release/%s/bin/%s/amd64/kubectl";
-  private static final String CHART_MUSEUM_CDN_PATH =
-      "public/shared/tools/chartmuseum/release/%s/bin/%s/amd64/chartmuseum";
-  private static final String GO_TEMPLATE_CDN_PATH =
-      "public/shared/tools/go-template/release/%s/bin/%s/amd64/go-template";
-  private static final String HARNESS_PYWINRM_CDN_PATH =
-      "public/shared/tools/harness-pywinrm/release/%s/bin/%s/amd64/harness-pywinrm";
-  private static final String OC_CDN_PATH = "public/shared/tools/oc/release/%s/bin/%s/amd64/oc";
-  private static final String HELM_CDN_PATH = "public/shared/tools/helm/release/%s/bin/%s/amd64/helm";
-  private static final String TERRAFORM_CONFIG_CDN_PATH =
-      "public/shared/tools/terraform-config-inspect/%s/%s/amd64/terraform-config-inspect";
-  private static final String KUSTOMIZE_CDN_PATH = "public/shared/tools/kustomize/release/%s/bin/%s/amd64/kustomize";
-  private static final String CF_VERSION_COMMAND = "cf --version";
-  private static final String SCM_CDN_PATH = "public/shared/tools/scm/release/%s/bin/%s/amd64/scm";
-
-  public static String getTerraformConfigInspectPath(String version) {
-    return join("/", terraformConfigInspectBaseDir, version, getOsPath(), "amd64", terraformConfigInspectBinary);
+  public static String getTerraformConfigInspectPath(final String version) {
+    return join("/", TERRAFORM_CONFIG_INSPECT.getBaseDir(), version, getOsPath(), "amd64",
+        TERRAFORM_CONFIG_INSPECT.getBinaryName());
   }
-  public static String getTerraformConfigInspectPath(boolean useLatestVersion) {
+  public static String getTerraformConfigInspectPath(final boolean useLatestVersion) {
     if (useLatestVersion) {
-      return join("/", terraformConfigInspectBaseDir, terraformConfigInspectLatestVersion, getOsPath(), "amd64",
-          terraformConfigInspectBinary);
+      return join("/", TERRAFORM_CONFIG_INSPECT.getBaseDir(), terraformConfigInspectLatestVersion, getOsPath(), "amd64",
+          TERRAFORM_CONFIG_INSPECT.getBinaryName());
     } else {
-      return join("/", terraformConfigInspectBaseDir, terraformConfigInspectCurrentVersion, getOsPath(), "amd64",
-          terraformConfigInspectBinary);
+      return join("/", TERRAFORM_CONFIG_INSPECT.getBaseDir(), terraformConfigInspectCurrentVersion, getOsPath(),
+          "amd64", TERRAFORM_CONFIG_INSPECT.getBinaryName());
     }
   }
 
   public static String getScmPath() {
-    return join("/", getScmFolderPath(), getScmBinary());
+    return join("/", getScmFolderPath(), SCM.getBinaryName());
   }
 
+  /**
+   * @deprecated use {@link #getScmPath()} instead
+   * @return scm binary name
+   */
+  @Deprecated
   public static String getScmBinary() {
-    return scmBinary;
+    return SCM.getBinaryName();
   }
 
+  /**
+   * @deprecated use {@link #getScmPath()} instead
+   * @return the path to the scm binary
+   */
+  @Deprecated
   public static String getScmFolderPath() {
-    String version = getScmVersion();
-    return join("/", scmBaseDir, version, getOsPath(), "amd64");
+    return join("/", SCM.getBaseDir(), getScmVersion(), getOsPath(), "amd64");
   }
 
   public static String getDefaultKubectlPath() {
@@ -226,9 +211,9 @@ public class InstallUtils {
         return true;
       }
 
-      String kubectlDirectory = kubectlBaseDir + kubectlVersion;
+      String kubectlDirectory = KUBECTL.getBaseDir() + kubectlVersion;
 
-      if (validateKubectlExists(kubectlDirectory)) {
+      if (validateToolExists(kubectlDirectory, KUBECTL)) {
         String kubectlPath = Paths.get(kubectlDirectory + "/kubectl").toAbsolutePath().normalize().toString();
         kubectlPaths.put(kubectlVersion, kubectlPath);
         log.info("kubectl version {} already installed", kubectlVersion);
@@ -258,7 +243,7 @@ public class InstallUtils {
         String kubectlPath = Paths.get(kubectlDirectory + "/kubectl").toAbsolutePath().normalize().toString();
         kubectlPaths.put(kubectlVersion, kubectlPath);
         log.info(result.outputUTF8());
-        if (validateKubectlExists(kubectlDirectory)) {
+        if (validateToolExists(kubectlDirectory, KUBECTL)) {
           log.info("kubectl path: {}", kubectlPath);
           return true;
         } else {
@@ -276,36 +261,9 @@ public class InstallUtils {
     }
   }
 
-  private static boolean validateKubectlExists(String kubectlDirectory) {
-    try {
-      if (!Files.exists(Paths.get(kubectlDirectory + "/kubectl"))) {
-        return false;
-      }
-
-      String script = "./kubectl version --short --client\n";
-      ProcessExecutor processExecutor = new ProcessExecutor()
-                                            .timeout(1, TimeUnit.MINUTES)
-                                            .directory(new File(kubectlDirectory))
-                                            .command("/bin/bash", "-c", script)
-                                            .readOutput(true);
-      ProcessResult result = processExecutor.execute();
-
-      if (result.getExitValue() == 0) {
-        log.info(result.outputUTF8());
-        return true;
-      } else {
-        log.error(result.outputUTF8());
-        return false;
-      }
-    } catch (Exception e) {
-      log.error("Error checking kubectl", e);
-      return false;
-    }
-  }
-
   private static String getKubectlDownloadUrl(DelegateConfiguration delegateConfiguration, String version) {
     if (delegateConfiguration.isUseCdn()) {
-      return join("/", delegateConfiguration.getCdnUrl(), String.format(KUBECTL_CDN_PATH, version, getOsPath()));
+      return join("/", delegateConfiguration.getCdnUrl(), String.format(KUBECTL.getCdnPath(), version, getOsPath()));
     }
 
     return getManagerBaseUrl(delegateConfiguration.getManagerUrl())
@@ -319,9 +277,9 @@ public class InstallUtils {
         return true;
       }
 
-      String goTemplateClientDirectory = goTemplateClientBaseDir + goTemplateClientVersion;
+      String goTemplateClientDirectory = GO_TEMPLATE.getBaseDir() + goTemplateClientVersion;
 
-      if (validateGoTemplateClientExists(goTemplateClientDirectory)) {
+      if (validateToolExists(goTemplateClientDirectory, GO_TEMPLATE)) {
         goTemplateToolPath =
             Paths.get(goTemplateClientDirectory + "/go-template").toAbsolutePath().normalize().toString();
         log.info("go-template version {} already installed", goTemplateClientVersion);
@@ -332,7 +290,7 @@ public class InstallUtils {
 
       createDirectoryIfDoesNotExist(goTemplateClientDirectory);
 
-      String downloadUrl = getGoTemplateDownloadUrl(configuration, goTemplateClientVersion);
+      String downloadUrl = getGoTemplateDownloadUrl(configuration);
 
       log.info("download Url is {}", downloadUrl);
 
@@ -351,7 +309,7 @@ public class InstallUtils {
         goTemplateToolPath =
             Paths.get(goTemplateClientDirectory + "/go-template").toAbsolutePath().normalize().toString();
         log.info(result.outputUTF8());
-        if (validateGoTemplateClientExists(goTemplateClientDirectory)) {
+        if (validateToolExists(goTemplateClientDirectory, GO_TEMPLATE)) {
           log.info("go-template path: {}", goTemplateToolPath);
           return true;
         } else {
@@ -376,9 +334,9 @@ public class InstallUtils {
         return true;
       }
 
-      String harnessPywinrmClientDirectory = harnessPywinrmBaseDir + harnessPywinrmVersion;
+      String harnessPywinrmClientDirectory = HARNESS_PYWINRM.getBaseDir() + harnessPywinrmVersion;
 
-      if (validateHarnessPywinrmExists(harnessPywinrmClientDirectory)) {
+      if (validateToolExists(harnessPywinrmClientDirectory, HARNESS_PYWINRM)) {
         harnessPywinrmToolPath =
             Paths.get(harnessPywinrmClientDirectory + "/harness-pywinrm").toAbsolutePath().normalize().toString();
         log.info("harness-pywinrm version {} already installed", harnessPywinrmVersion);
@@ -389,7 +347,7 @@ public class InstallUtils {
 
       createDirectoryIfDoesNotExist(harnessPywinrmClientDirectory);
 
-      String downloadUrl = getHarnessPywinrmDownloadUrl(configuration, harnessPywinrmVersion);
+      String downloadUrl = getHarnessPywinrmDownloadUrl(configuration);
 
       log.info("download Url is {}", downloadUrl);
 
@@ -407,7 +365,7 @@ public class InstallUtils {
         harnessPywinrmToolPath =
             Paths.get(harnessPywinrmClientDirectory + "/harness-pywinrm").toAbsolutePath().normalize().toString();
         log.info(format("harness-pywinrm version: %s", result.outputUTF8()));
-        if (validateHarnessPywinrmExists(harnessPywinrmClientDirectory)) {
+        if (validateToolExists(harnessPywinrmClientDirectory, HARNESS_PYWINRM)) {
           log.info("harness-pywinrm path: {}", harnessPywinrmToolPath);
           return true;
         } else {
@@ -418,85 +376,53 @@ public class InstallUtils {
         log.error("harness-pywinrm install failed\n" + result.outputUTF8());
         return false;
       }
-    } catch (Exception e) {
+    } catch (final Exception e) {
       log.error("Error installing harness-pywinrm", e);
       return false;
     }
   }
 
-  private static boolean validateHarnessPywinrmExists(String harnessPywinrmClientDirectory) {
-    try {
-      if (!Files.exists(Paths.get(harnessPywinrmClientDirectory + "/harness-pywinrm"))) {
-        return false;
-      }
-
-      String script = "./harness-pywinrm -v\n";
-      ProcessExecutor processExecutor = new ProcessExecutor()
-                                            .timeout(1, TimeUnit.MINUTES)
-                                            .directory(new File(harnessPywinrmClientDirectory))
-                                            .command("/bin/bash", "-c", script)
-                                            .readOutput(true);
-      ProcessResult result = processExecutor.execute();
-
-      if (result.getExitValue() == 0) {
-        log.info(result.outputUTF8());
-        return true;
-      } else {
-        log.error(result.outputUTF8());
-        return false;
-      }
-    } catch (Exception e) {
-      log.error("Error checking harness-winrm", e);
-      return false;
+  public static void setupDefaultPaths(DelegateConfiguration delegateConfiguration) {
+    if (isNotEmpty(delegateConfiguration.getKustomizePath())) {
+      kustomizePath = delegateConfiguration.getKustomizePath();
+      isCustomKustomizePath = true;
+    }
+    if (isNotEmpty(delegateConfiguration.getKubectlPath())) {
+      kubectlPaths.put(defaultKubectlVersion, delegateConfiguration.getKubectlPath());
+      kubectlPaths.put(newKubectlVersion, delegateConfiguration.getKubectlPath());
+    }
+    if (isNotEmpty(delegateConfiguration.getHelm3Path())) {
+      helmPaths.put(helm3Version, delegateConfiguration.getHelm3Path());
+      helmPaths.put(helm3VersionNew, delegateConfiguration.getHelm3Path());
+    }
+    if (isNotEmpty(delegateConfiguration.getHelmPath())) {
+      helmPaths.put(helm2Version, delegateConfiguration.getHelmPath());
+    }
+    if (isNotEmpty(delegateConfiguration.getOcPath())) {
+      ocPath = delegateConfiguration.getOcPath();
     }
   }
 
-  private static boolean validateGoTemplateClientExists(String goTemplateClientDirectory) {
-    try {
-      if (!Files.exists(Paths.get(goTemplateClientDirectory + "/go-template"))) {
-        return false;
-      }
-
-      String script = "./go-template -v\n";
-      ProcessExecutor processExecutor = new ProcessExecutor()
-                                            .timeout(1, TimeUnit.MINUTES)
-                                            .directory(new File(goTemplateClientDirectory))
-                                            .command("/bin/bash", "-c", script)
-                                            .readOutput(true);
-      ProcessResult result = processExecutor.execute();
-
-      if (result.getExitValue() == 0) {
-        log.info(result.outputUTF8());
-        return true;
-      } else {
-        log.error(result.outputUTF8());
-        return false;
-      }
-    } catch (Exception e) {
-      log.error("Error checking go-template", e);
-      return false;
-    }
-  }
-
-  private static String getGoTemplateDownloadUrl(DelegateConfiguration delegateConfiguration, String version) {
+  private static String getGoTemplateDownloadUrl(DelegateConfiguration delegateConfiguration) {
     if (delegateConfiguration.isUseCdn()) {
-      return join("/", delegateConfiguration.getCdnUrl(), String.format(GO_TEMPLATE_CDN_PATH, version, getOsPath()));
+      return join("/", delegateConfiguration.getCdnUrl(),
+          String.format(GO_TEMPLATE.getCdnPath(), InstallUtils.goTemplateClientVersion, getOsPath()));
     }
 
     return getManagerBaseUrl(delegateConfiguration.getManagerUrl())
-        + "storage/harness-download/snapshot-go-template/release/" + version + "/bin/" + getOsPath()
-        + "/amd64/go-template";
+        + "storage/harness-download/snapshot-go-template/release/" + InstallUtils.goTemplateClientVersion + "/bin/"
+        + getOsPath() + "/amd64/go-template";
   }
 
-  private static String getHarnessPywinrmDownloadUrl(DelegateConfiguration delegateConfiguration, String version) {
+  private static String getHarnessPywinrmDownloadUrl(DelegateConfiguration delegateConfiguration) {
     if (delegateConfiguration.isUseCdn()) {
-      return join(
-          "/", delegateConfiguration.getCdnUrl(), String.format(HARNESS_PYWINRM_CDN_PATH, version, getOsPath()));
+      return join("/", delegateConfiguration.getCdnUrl(),
+          String.format(HARNESS_PYWINRM.getCdnPath(), InstallUtils.harnessPywinrmVersion, getOsPath()));
     }
 
     return getManagerBaseUrl(delegateConfiguration.getManagerUrl())
-        + "storage/harness-download/snapshot-harness-pywinrm/release/" + version + "/bin/" + getOsPath()
-        + "/amd64/harness-pywinrm";
+        + "storage/harness-download/snapshot-harness-pywinrm/release/" + InstallUtils.harnessPywinrmVersion + "/bin/"
+        + getOsPath() + "/amd64/harness-pywinrm";
   }
 
   private static String getManagerBaseUrl(String managerUrl) {
@@ -507,48 +433,9 @@ public class InstallUtils {
     return getBaseUrl(managerUrl);
   }
 
-  @VisibleForTesting
-  static String getOsPath() {
-    if (SystemUtils.IS_OS_WINDOWS) {
-      return "windows";
-    }
-    if (SystemUtils.IS_OS_MAC) {
-      return "darwin";
-    }
-    return "linux";
-  }
-
-  private static boolean validateHelmExists(String helmDirectory) {
-    try {
-      if (!Files.exists(Paths.get(helmDirectory + "/helm"))) {
-        return false;
-      }
-
-      String script = "./helm version -c";
-      ProcessExecutor processExecutor = new ProcessExecutor()
-                                            .timeout(1, TimeUnit.MINUTES)
-                                            .directory(new File(helmDirectory))
-                                            .command("/bin/bash", "-c", script)
-                                            .readOutput(true);
-
-      ProcessResult result = processExecutor.execute();
-      if (result.getExitValue() == 0) {
-        log.info(result.outputUTF8());
-        return true;
-      } else {
-        log.error(result.outputUTF8());
-        return false;
-      }
-
-    } catch (Exception e) {
-      log.error("Error checking helm", e);
-      return false;
-    }
-  }
-
   private static String getKustomizeDownloadUrl(DelegateConfiguration delegateConfiguration, String version) {
     if (delegateConfiguration.isUseCdn()) {
-      return join("/", delegateConfiguration.getCdnUrl(), String.format(KUSTOMIZE_CDN_PATH, version, getOsPath()));
+      return join("/", delegateConfiguration.getCdnUrl(), String.format(KUSTOMIZE.getCdnPath(), version, getOsPath()));
     }
 
     return getManagerBaseUrl(delegateConfiguration.getManagerUrl())
@@ -557,7 +444,7 @@ public class InstallUtils {
 
   private static String getHelmDownloadUrl(DelegateConfiguration delegateConfiguration, String version) {
     if (delegateConfiguration.isUseCdn()) {
-      return join("/", delegateConfiguration.getCdnUrl(), String.format(HELM_CDN_PATH, version, getOsPath()));
+      return join("/", delegateConfiguration.getCdnUrl(), String.format(HELM.getCdnPath(), version, getOsPath()));
     }
 
     return getManagerBaseUrl(delegateConfiguration.getManagerUrl()) + "storage/harness-download/harness-helm/release/"
@@ -568,7 +455,7 @@ public class InstallUtils {
     if (isHelmV2(helmVersion)) {
       log.info("Init helm client only");
 
-      String helmDirectory = helmBaseDir + helmVersion;
+      String helmDirectory = HELM.getBaseDir() + helmVersion;
       String script = "./helm init -c --skip-refresh \n";
 
       ProcessExecutor processExecutor = new ProcessExecutor()
@@ -618,8 +505,8 @@ public class InstallUtils {
         return true;
       }
 
-      String helmDirectory = helmBaseDir + helmVersion;
-      if (validateHelmExists(helmDirectory)) {
+      String helmDirectory = HELM.getBaseDir() + helmVersion;
+      if (validateToolExists(helmDirectory, HELM)) {
         String helmPath = Paths.get(helmDirectory + "/helm").toAbsolutePath().normalize().toString();
         helmPaths.put(helmVersion, helmPath);
         log.info(format("helm version %s already installed", helmVersion));
@@ -650,7 +537,7 @@ public class InstallUtils {
         helmPaths.put(helmVersion, helmPath);
         log.info(result.outputUTF8());
 
-        if (validateHelmExists(helmDirectory)) {
+        if (validateToolExists(helmDirectory, HELM)) {
           log.info("helm path: {}", helmPath);
           return true;
         } else {
@@ -676,37 +563,10 @@ public class InstallUtils {
     return isHelmV2(helmVersion) ? "./helm version -c \n" : "./helm version \n";
   }
 
-  private static boolean validateChartMuseumExists(String chartMuseumDirectory) {
-    try {
-      if (!Files.exists(Paths.get(chartMuseumDirectory + "/chartmuseum"))) {
-        return false;
-      }
-
-      String script = "./chartmuseum -v";
-      ProcessExecutor processExecutor = new ProcessExecutor()
-                                            .timeout(1, TimeUnit.MINUTES)
-                                            .directory(new File(chartMuseumDirectory))
-                                            .command("/bin/bash", "-c", script)
-                                            .readOutput(true);
-
-      ProcessResult result = processExecutor.execute();
-      if (result.getExitValue() == 0) {
-        log.info(result.outputUTF8());
-        return true;
-      } else {
-        log.error(result.outputUTF8());
-        return false;
-      }
-
-    } catch (Exception e) {
-      log.error("Error checking chart museum", e);
-      return false;
-    }
-  }
-
   private static String getChartMuseumDownloadUrl(DelegateConfiguration delegateConfiguration, String version) {
     if (delegateConfiguration.isUseCdn()) {
-      return join("/", delegateConfiguration.getCdnUrl(), String.format(CHART_MUSEUM_CDN_PATH, version, getOsPath()));
+      return join(
+          "/", delegateConfiguration.getCdnUrl(), String.format(CHARTMUSEUM.getCdnPath(), version, getOsPath()));
     }
 
     return getManagerBaseUrl(delegateConfiguration.getManagerUrl())
@@ -727,11 +587,12 @@ public class InstallUtils {
         return true;
       }
 
-      String chartMuseumDirectory = chartMuseumBaseDir + version;
-      if (validateChartMuseumExists(chartMuseumDirectory)) {
+      String chartMuseumDirectory = CHARTMUSEUM.getBaseDir() + version;
+      String chartMuseumPath;
+      if (validateToolExists(chartMuseumDirectory, CHARTMUSEUM)) {
         chartMuseumPath = Paths.get(chartMuseumDirectory + "/chartmuseum").toAbsolutePath().normalize().toString();
         chartMuseumPaths.put(version, chartMuseumPath);
-        log.info("chartmuseum version %s already installed", version);
+        log.info("chartmuseum version {} already installed", version);
         return true;
       }
 
@@ -757,7 +618,7 @@ public class InstallUtils {
         chartMuseumPaths.put(version, chartMuseumPath);
         log.info(result.outputUTF8());
 
-        if (validateChartMuseumExists(chartMuseumDirectory)) {
+        if (validateToolExists(chartMuseumDirectory, CHARTMUSEUM)) {
           log.info("chartmuseum path: {}", chartMuseumPath);
           return true;
         } else {
@@ -794,7 +655,7 @@ public class InstallUtils {
 
       final String terraformConfigInspectVersionedDirectory =
           Paths.get(getTerraformConfigInspectPath(version)).getParent().toString();
-      if (validateTerraformConfigInspectExists(terraformConfigInspectVersionedDirectory, version)) {
+      if (validateToolExists(terraformConfigInspectVersionedDirectory, TERRAFORM_CONFIG_INSPECT)) {
         log.info(format("terraform-config-inspect version %s already installed at {}", version),
             terraformConfigInspectVersionedDirectory);
         return true;
@@ -831,37 +692,14 @@ public class InstallUtils {
   }
 
   @VisibleForTesting
-  protected static String getTerraformConfigInspectDownloadUrl(
-      DelegateConfiguration delegateConfiguration, String version) {
+  static String getTerraformConfigInspectDownloadUrl(DelegateConfiguration delegateConfiguration, String version) {
     if (delegateConfiguration.isUseCdn()) {
-      return join(
-          "/", delegateConfiguration.getCdnUrl(), String.format(TERRAFORM_CONFIG_CDN_PATH, version, getOsPath()));
+      return join("/", delegateConfiguration.getCdnUrl(),
+          String.format(TERRAFORM_CONFIG_INSPECT.getCdnPath(), version, getOsPath()));
     }
     return getManagerBaseUrl(delegateConfiguration.getManagerUrl())
         + "storage/harness-download/harness-terraform-config-inspect/" + version + "/" + getOsPath() + "/amd64/"
-        + terraformConfigInspectBinary;
-  }
-
-  private static boolean validateTerraformConfigInspectExists(
-      String terraformConfigInspectVersionedDirectory, String version) {
-    try {
-      Path path = Paths.get(join("/", terraformConfigInspectVersionedDirectory, terraformConfigInspectBinary));
-      if (!path.toFile().exists()) {
-        return false;
-      }
-      String terraformConfigInspectBinary = "./terraform-config-inspect";
-      ProcessExecutor processExecutor = new ProcessExecutor()
-                                            .timeout(1, TimeUnit.MINUTES)
-                                            .directory(new File(terraformConfigInspectVersionedDirectory))
-                                            .command("/bin/bash", "-c", terraformConfigInspectBinary)
-                                            .readOutput(true);
-      ProcessResult result = processExecutor.execute();
-      return result.getExitValue() == 0;
-
-    } catch (Exception e) {
-      log.error(format("Error checking Terraform Config Inspect version %s", version), e);
-      return false;
-    }
+        + TERRAFORM_CONFIG_INSPECT.getBinaryName();
   }
 
   public static boolean installScm(DelegateConfiguration configuration) {
@@ -872,7 +710,7 @@ public class InstallUtils {
       }
 
       final String scmVersionedDirectory = Paths.get(getScmPath()).getParent().toString();
-      if (validateScmExists(scmVersionedDirectory)) {
+      if (validateToolExists(scmVersionedDirectory, SCM)) {
         log.info("scm already installed at {}", scmVersionedDirectory);
         return true;
       }
@@ -895,7 +733,7 @@ public class InstallUtils {
       if (result.getExitValue() == 0) {
         String scmPath = Paths.get(getScmPath()).toAbsolutePath().toString();
         log.info(result.outputUTF8());
-        if (validateScmExists(scmVersionedDirectory)) {
+        if (validateToolExists(scmVersionedDirectory, SCM)) {
           log.info("scm path: {}", scmPath);
           return true;
         } else {
@@ -922,42 +760,14 @@ public class InstallUtils {
     return version;
   }
 
-  private static boolean validateScmExists(String scmDirectory) {
-    try {
-      Path path = Paths.get(scmDirectory, scmBinary);
-      if (!path.toFile().exists()) {
-        return false;
-      }
-
-      String script = "./scm --version\n";
-      ProcessExecutor processExecutor = new ProcessExecutor()
-                                            .timeout(1, TimeUnit.MINUTES)
-                                            .directory(new File(scmDirectory))
-                                            .command("/bin/bash", "-c", script)
-                                            .readOutput(true);
-      ProcessResult result = processExecutor.execute();
-
-      if (result.getExitValue() == 0) {
-        log.info(result.outputString());
-        return true;
-      } else {
-        log.error(result.outputString());
-        return false;
-      }
-    } catch (Exception e) {
-      log.error("Error checking scm", e);
-      return false;
-    }
-  }
-
   @VisibleForTesting
-  protected static String getScmDownloadUrl(DelegateConfiguration delegateConfiguration) {
+  static String getScmDownloadUrl(DelegateConfiguration delegateConfiguration) {
     String scmVersion = getScmVersion();
     if (delegateConfiguration.isUseCdn()) {
-      return join("/", delegateConfiguration.getCdnUrl(), String.format(SCM_CDN_PATH, scmVersion, getOsPath()));
+      return join("/", delegateConfiguration.getCdnUrl(), String.format(SCM.getCdnPath(), scmVersion, getOsPath()));
     }
     return getManagerBaseUrl(delegateConfiguration.getManagerUrl()) + "storage/harness-download/harness-scm/release/"
-        + scmVersion + "/bin/" + getOsPath() + "/amd64/" + scmBinary;
+        + scmVersion + "/bin/" + getOsPath() + "/amd64/" + SCM.getBinaryName();
   }
 
   public static boolean installOc(DelegateConfiguration configuration) {
@@ -979,8 +789,8 @@ public class InstallUtils {
         log.info("No version configured. Using default oc version {}", version);
       }
 
-      String ocDirectory = ocBaseDir + version;
-      if (validateOcExists(ocDirectory)) {
+      String ocDirectory = OC.getBaseDir() + version;
+      if (validateToolExists(ocDirectory, OC)) {
         ocPath = Paths.get(ocDirectory, "oc").toAbsolutePath().normalize().toString();
         log.info("oc version {} already installed", version);
         return true;
@@ -1006,7 +816,7 @@ public class InstallUtils {
       if (result.getExitValue() == 0) {
         ocPath = Paths.get(ocDirectory, "oc").toAbsolutePath().normalize().toString();
         log.info(result.outputUTF8());
-        if (validateOcExists(ocDirectory)) {
+        if (validateToolExists(ocDirectory, OC)) {
           log.info("oc path: {}", ocPath);
           return true;
         } else {
@@ -1024,37 +834,9 @@ public class InstallUtils {
     }
   }
 
-  private static boolean validateOcExists(String ocDirectory) {
-    try {
-      Path path = Paths.get(ocDirectory, "oc");
-      if (!path.toFile().exists()) {
-        return false;
-      }
-
-      String script = "./oc version --client\n";
-      ProcessExecutor processExecutor = new ProcessExecutor()
-                                            .timeout(1, TimeUnit.MINUTES)
-                                            .directory(new File(ocDirectory))
-                                            .command("/bin/bash", "-c", script)
-                                            .readOutput(true);
-      ProcessResult result = processExecutor.execute();
-
-      if (result.getExitValue() == 0) {
-        log.info(result.outputUTF8());
-        return true;
-      } else {
-        log.error(result.outputUTF8());
-        return false;
-      }
-    } catch (Exception e) {
-      log.error("Error checking oc", e);
-      return false;
-    }
-  }
-
   private static String getOcDownloadUrl(DelegateConfiguration delegateConfiguration, String version) {
     if (delegateConfiguration.isUseCdn()) {
-      return join("/", delegateConfiguration.getCdnUrl(), String.format(OC_CDN_PATH, version, getOsPath()));
+      return join("/", delegateConfiguration.getCdnUrl(), String.format(OC.getCdnPath(), version, getOsPath()));
     }
     return getManagerBaseUrl(delegateConfiguration.getManagerUrl()) + "storage/harness-download/harness-oc/release/"
         + version + "/bin/" + getOsPath() + "/amd64/oc";
@@ -1083,9 +865,9 @@ public class InstallUtils {
         return true;
       }
 
-      String kustomizeDir = Paths.get(kustomizeBaseDir, kustomizeVersion).toAbsolutePath().normalize().toString();
+      String kustomizeDir = Paths.get(KUSTOMIZE.getBaseDir(), kustomizeVersion).toAbsolutePath().normalize().toString();
 
-      if (validateKustomizeExists(kustomizeDir)) {
+      if (validateToolExists(kustomizeDir, KUSTOMIZE)) {
         kustomizePath = Paths.get(kustomizeDir, "kustomize").toAbsolutePath().normalize().toString();
         kustomizePaths.put(kustomizeVersion, kustomizePath);
         log.info("kustomize version {} already installed", kustomizeVersion);
@@ -1115,7 +897,7 @@ public class InstallUtils {
         kustomizePath = Paths.get(kustomizeDir, "kustomize").toAbsolutePath().normalize().toString();
         kustomizePaths.put(kustomizeVersion, kustomizePath);
         log.info(result.outputUTF8());
-        if (validateKustomizeExists(kustomizeDir)) {
+        if (validateToolExists(kustomizeDir, KUSTOMIZE)) {
           log.info("kustomize path: {}", kustomizePath);
           return true;
         } else {
@@ -1129,33 +911,6 @@ public class InstallUtils {
       }
     } catch (Exception e) {
       log.error("Error installing kustomize", e);
-      return false;
-    }
-  }
-
-  private static boolean validateKustomizeExists(String kustomizeDir) {
-    try {
-      if (!Paths.get(kustomizeDir + "/kustomize").toFile().exists()) {
-        return false;
-      }
-
-      String script = "./kustomize version --short\n";
-      ProcessExecutor processExecutor = new ProcessExecutor()
-                                            .timeout(1, TimeUnit.MINUTES)
-                                            .directory(new File(kustomizeDir))
-                                            .command("/bin/bash", "-c", script)
-                                            .readOutput(true);
-      ProcessResult result = processExecutor.execute();
-
-      if (result.getExitValue() == 0) {
-        log.info(result.outputUTF8());
-        return true;
-      } else {
-        log.error(result.outputUTF8());
-        return false;
-      }
-    } catch (Exception e) {
-      log.error("Error checking kustomize", e);
       return false;
     }
   }
@@ -1180,55 +935,61 @@ public class InstallUtils {
     return false;
   }
 
-  public static void validateCfCliExists() {
-    ProcessResult processResult = executeCommand(CF_VERSION_COMMAND, 1);
-    if (processResult.getExitValue() == 0) {
-      log.info(format("Found CF CLI installed by package manager : %s", processResult.outputUTF8()));
-    }
+  public static boolean validateCfCliExists() {
+    return validateToolExists(".", CF);
   }
 
-  private static ProcessResult executeCommand(final String cmd, long timeoutInMin) {
+  private static boolean validateToolExists(final String toolDirectory, final ClientTool tool) {
     try {
-      return new ProcessExecutor()
-          .timeout(timeoutInMin, TimeUnit.MINUTES)
-          .command("/bin/bash", "-c", cmd)
-          .readOutput(true)
-          .redirectOutput(new LogOutputStream() {
-            @Override
-            protected void processLine(String line) {
-              log.info(line);
-            }
-          })
-          .redirectError(new LogOutputStream() {
-            @Override
-            protected void processLine(String line) {
-              log.error(line);
-            }
-          })
-          .execute();
-    } catch (Exception ex) {
-      throw new ProcessExecutionException(format("Unable to execute bash command: %s", cmd), ex);
+      if (!Files.exists(Paths.get(toolDirectory, tool.getBinaryName()))) {
+        return false;
+      }
+
+      return runCommand(toolDirectory, tool.getValidateCommand());
+    } catch (final Exception e) {
+      log.error("Error validating if tool {} exists using {}", tool.getBinaryName(), tool.getValidateCommand(), e);
+      return false;
     }
   }
 
-  public static void setupDefaultPaths(DelegateConfiguration delegateConfiguration) {
-    if (isNotEmpty(delegateConfiguration.getKustomizePath())) {
-      kustomizePath = delegateConfiguration.getKustomizePath();
-      isCustomKustomizePath = true;
+  private static boolean runCommand(final String toolDirectory, final String script)
+      throws IOException, InterruptedException, TimeoutException {
+    final ProcessExecutor processExecutor = new ProcessExecutor()
+                                                .timeout(1, TimeUnit.MINUTES)
+                                                .directory(new File(toolDirectory))
+                                                .command("/bin/bash", "-c", script)
+                                                .readOutput(true)
+                                                .redirectOutput(new LogOutputStream() {
+                                                  @Override
+                                                  protected void processLine(final String line) {
+                                                    log.info(line);
+                                                  }
+                                                })
+                                                .redirectError(new LogOutputStream() {
+                                                  @Override
+                                                  protected void processLine(final String line) {
+                                                    log.error(line);
+                                                  }
+                                                });
+    final ProcessResult result = processExecutor.execute();
+
+    if (result.getExitValue() == 0) {
+      log.info(result.outputUTF8());
+      return true;
+    } else {
+      log.error(result.outputUTF8());
+      return false;
     }
-    if (isNotEmpty(delegateConfiguration.getKubectlPath())) {
-      kubectlPaths.put(defaultKubectlVersion, delegateConfiguration.getKubectlPath());
-      kubectlPaths.put(newKubectlVersion, delegateConfiguration.getKubectlPath());
+  }
+
+  @VisibleForTesting
+  static String getOsPath() {
+    if (SystemUtils.IS_OS_WINDOWS) {
+      return "windows";
     }
-    if (isNotEmpty(delegateConfiguration.getHelm3Path())) {
-      helmPaths.put(helm3Version, delegateConfiguration.getHelm3Path());
-      helmPaths.put(helm3VersionNew, delegateConfiguration.getHelm3Path());
+    if (SystemUtils.IS_OS_MAC) {
+      return "darwin";
     }
-    if (isNotEmpty(delegateConfiguration.getHelmPath())) {
-      helmPaths.put(helm2Version, delegateConfiguration.getHelmPath());
-    }
-    if (isNotEmpty(delegateConfiguration.getOcPath())) {
-      ocPath = delegateConfiguration.getOcPath();
-    }
+    return "linux";
   }
 }

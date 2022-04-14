@@ -18,7 +18,6 @@ import static io.harness.delegate.configuration.InstallUtils.helm2Version;
 import static io.harness.delegate.configuration.InstallUtils.helm3Version;
 import static io.harness.delegate.configuration.InstallUtils.installKustomize;
 import static io.harness.delegate.configuration.InstallUtils.isCustomKustomizePath;
-import static io.harness.delegate.configuration.InstallUtils.kustomizePath;
 import static io.harness.delegate.configuration.InstallUtils.setupDefaultPaths;
 import static io.harness.filesystem.FileIo.deleteDirectoryAndItsContentIfExists;
 import static io.harness.rule.OwnerRule.ANSHUL;
@@ -42,8 +41,10 @@ import io.harness.rule.Owner;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.HashMap;
+import java.util.Map;
+
 import org.apache.commons.lang3.SystemUtils;
+import org.apache.groovy.util.Maps;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -238,7 +239,7 @@ public class InstallUtilsTest extends CategoryTest implements MockableTestMixin 
   @Owner(developers = NAMAN_TALAYCHA)
   @Category(UnitTests.class)
   public void testGetKustomizePath() {
-    kustomizePath = "usr/local/bin/kustomize";
+    final String kustomizePath = "usr/local/bin/kustomize";
     isCustomKustomizePath = true;
     assertThat(getKustomizePath(true)).isEqualTo(kustomizePath);
     assertThat(getKustomizePath(false)).isEqualTo(kustomizePath);
@@ -247,14 +248,13 @@ public class InstallUtilsTest extends CategoryTest implements MockableTestMixin 
   @Test
   @Owner(developers = VAIBHAV_SI)
   @Category(FunctionalTests.class)
-  public void shouldInstallKustomize() throws IOException, IllegalAccessException {
+  public void shouldInstallKustomize() throws IOException {
     assumeThat(SystemUtils.IS_OS_WINDOWS).isFalse();
     assumeThat(SystemUtils.IS_OS_MAC).isFalse();
 
     deleteDirectoryAndItsContentIfExists("./client-tools/kustomize/");
     assertThat(installKustomize(delegateConfiguration)).isTrue();
 
-    // Won't download this time
     assertThat(installKustomize(delegateConfiguration)).isTrue();
   }
 
@@ -266,7 +266,7 @@ public class InstallUtilsTest extends CategoryTest implements MockableTestMixin 
     assumeThat(SystemUtils.IS_OS_MAC).isFalse();
     delegateConfiguration.setKustomizePath("usr/local/bin/kustomize");
     assertThat(installKustomize(delegateConfiguration)).isTrue();
-    assertThat(kustomizePath).isEqualTo("usr/local/bin/kustomize");
+    assertThat("kustomize").isEqualTo("usr/local/bin/kustomize");
     assertThat(isCustomKustomizePath).isTrue();
   }
 
@@ -283,7 +283,7 @@ public class InstallUtilsTest extends CategoryTest implements MockableTestMixin 
     delegateConfiguration.setOcPath("usr/local/bin/oc");
     setupDefaultPaths(delegateConfiguration);
     assertThat(installKustomize(delegateConfiguration)).isTrue();
-    assertThat(kustomizePath).isEqualTo("local/bin/kustomize");
+    assertThat("kustomize").isEqualTo("local/bin/kustomize");
     assertThat(getDefaultKubectlPath()).isEqualTo("usr/local/bin/kubectl");
     assertThat(getNewKubectlPath()).isEqualTo("usr/local/bin/kubectl");
     assertThat(getOcPath()).isEqualTo("usr/local/bin/oc");
@@ -304,12 +304,8 @@ public class InstallUtilsTest extends CategoryTest implements MockableTestMixin 
 
   @Before
   public void setup() throws Exception {
-    setStaticFieldValue(InstallUtils.class, "helmPaths", new HashMap() {
-      {
-        put(helm2Version, "helm");
-        put(helm3Version, "helm");
-      }
-    });
+    final Map<String, String> helmPaths = Maps.of(helm2Version, "helm", helm3Version, "helm");
+    setStaticFieldValue(InstallUtils.class, "helmPaths", helmPaths);
   }
 
   @Test
