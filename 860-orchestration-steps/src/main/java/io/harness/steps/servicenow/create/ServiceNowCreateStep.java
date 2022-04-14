@@ -71,10 +71,12 @@ public class ServiceNowCreateStep extends TaskExecutableWithRollbackAndRbac<Serv
             .ticketType(specParameters.getTicketType().getValue())
             .templateName(specParameters.getTemplateName().getValue())
             .useServiceNowTemplate(specParameters.getUseServiceNowTemplate().getValue())
-            .delegateSelectors(StepUtils.getDelegateSelectorList(specParameters.getDelegateSelectors()))
+            .delegateSelectors(
+                StepUtils.getDelegateSelectorListFromTaskSelectorYaml(specParameters.getDelegateSelectors()))
             .fields(ServiceNowStepUtils.processServiceNowFieldsInSpec(specParameters.getFields()));
     return serviceNowStepHelperService.prepareTaskRequest(paramsBuilder, ambiance,
-            specParameters.getConnectorRef().getValue(), stepParameters.getTimeout().getValue(), "ServiceNow Task: Create Ticket");
+        specParameters.getConnectorRef().getValue(), stepParameters.getTimeout().getValue(),
+        "ServiceNow Task: Create Ticket");
   }
 
   @Override

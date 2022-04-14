@@ -12,7 +12,6 @@ import static io.harness.annotations.dev.HarnessTeam.CDC;
 import io.harness.EntityType;
 import io.harness.annotations.dev.OwnedBy;
 import io.harness.beans.IdentifierRef;
-import io.harness.cdng.service.ServiceStepUtils;
 import io.harness.delegate.task.servicenow.ServiceNowTaskNGParameters;
 import io.harness.delegate.task.servicenow.ServiceNowTaskNGParameters.ServiceNowTaskNGParametersBuilder;
 import io.harness.delegate.task.servicenow.ServiceNowTaskNGResponse;
@@ -67,16 +66,18 @@ public class ServiceNowUpdateStep extends TaskExecutableWithRollbackAndRbac<Serv
       Ambiance ambiance, StepElementParameters stepParameters, StepInputPackage inputPackage) {
     ServiceNowUpdateSpecParameters specParameters = (ServiceNowUpdateSpecParameters) stepParameters.getSpec();
     ServiceNowTaskNGParametersBuilder paramsBuilder =
-            ServiceNowTaskNGParameters.builder()
-                    .action(ServiceNowActionNG.UPDATE_TICKET)
-                    .ticketType(specParameters.getTicketType().getValue())
-                    .ticketNumber(specParameters.getTicketNumber().getValue())
-                    .templateName(specParameters.getTemplateName().getValue())
-                    .useServiceNowTemplate(specParameters.getUseServiceNowTemplate().getValue())
-                    .delegateSelectors(StepUtils.getDelegateSelectorList(specParameters.getDelegateSelectors()))
-                    .fields(ServiceNowStepUtils.processServiceNowFieldsInSpec(specParameters.getFields()));
+        ServiceNowTaskNGParameters.builder()
+            .action(ServiceNowActionNG.UPDATE_TICKET)
+            .ticketType(specParameters.getTicketType().getValue())
+            .ticketNumber(specParameters.getTicketNumber().getValue())
+            .templateName(specParameters.getTemplateName().getValue())
+            .useServiceNowTemplate(specParameters.getUseServiceNowTemplate().getValue())
+            .delegateSelectors(
+                StepUtils.getDelegateSelectorListFromTaskSelectorYaml(specParameters.getDelegateSelectors()))
+            .fields(ServiceNowStepUtils.processServiceNowFieldsInSpec(specParameters.getFields()));
     return serviceNowStepHelperService.prepareTaskRequest(paramsBuilder, ambiance,
-            specParameters.getConnectorRef().getValue(), stepParameters.getTimeout().getValue(), "ServiceNow Task: Update Ticket");
+        specParameters.getConnectorRef().getValue(), stepParameters.getTimeout().getValue(),
+        "ServiceNow Task: Update Ticket");
   }
 
   @Override
