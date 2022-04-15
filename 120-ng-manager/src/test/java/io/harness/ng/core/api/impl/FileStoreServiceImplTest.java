@@ -7,22 +7,6 @@
 
 package io.harness.ng.core.api.impl;
 
-import static io.harness.rule.OwnerRule.BOJAN;
-import static io.harness.rule.OwnerRule.FILIP;
-import static io.harness.rule.OwnerRule.IVAN;
-import static io.harness.rule.OwnerRule.VLAD;
-
-import static java.lang.String.format;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Matchers.notNull;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyZeroInteractions;
-import static org.mockito.Mockito.when;
-
 import io.harness.CategoryTest;
 import io.harness.annotations.dev.HarnessTeam;
 import io.harness.annotations.dev.OwnedBy;
@@ -36,6 +20,7 @@ import io.harness.exception.InvalidArgumentsException;
 import io.harness.file.beans.NGBaseFile;
 import io.harness.filestore.FileStoreConstants;
 import io.harness.filestore.NGFileType;
+import io.harness.ng.core.api.impl.utils.FileReferencedByHelper;
 import io.harness.ng.core.dto.filestore.FileDTO;
 import io.harness.ng.core.dto.filestore.node.FileNodeDTO;
 import io.harness.ng.core.dto.filestore.node.FolderNodeDTO;
@@ -43,7 +28,14 @@ import io.harness.ng.core.entities.NGFile;
 import io.harness.repositories.filestore.FileStoreRepositoryCriteriaCreator;
 import io.harness.repositories.filestore.spring.FileStoreRepository;
 import io.harness.rule.Owner;
-
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.experimental.categories.Category;
+import org.junit.runner.RunWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.runners.MockitoJUnitRunner;
+import org.springframework.dao.DuplicateKeyException;
 import software.wings.app.MainConfiguration;
 import software.wings.service.intfc.FileService;
 
@@ -53,29 +45,36 @@ import java.io.InputStream;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Optional;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runner.RunWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
-import org.springframework.dao.DuplicateKeyException;
+
+import static io.harness.rule.OwnerRule.BOJAN;
+import static io.harness.rule.OwnerRule.FILIP;
+import static io.harness.rule.OwnerRule.IVAN;
+import static io.harness.rule.OwnerRule.VLAD;
+import static java.lang.String.format;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Matchers.notNull;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.when;
 
 @OwnedBy(HarnessTeam.CDP)
 @RunWith(MockitoJUnitRunner.class)
 public class FileStoreServiceImplTest extends CategoryTest {
-  public static final String ACCOUNT_IDENTIFIER = "accountIdentifier";
+  private static final String ACCOUNT_IDENTIFIER = "accountIdentifier";
   private static final String ORG_IDENTIFIER = "orgIdentifier";
-  public static final String PROJECT_IDENTIFIER = "projectIdentifier";
-  public static final String PARENT_IDENTIFIER = "parentIdentifier";
-  public static final String IDENTIFIER = "identifier";
-  public static final String FILE_IDENTIFIER = "fileIdentifier";
-  public static final String FILE_NAME = "fileName";
+  private static final String PROJECT_IDENTIFIER = "projectIdentifier";
+  private static final String IDENTIFIER = "identifier";
+  private static final String FILE_IDENTIFIER = "fileIdentifier";
+  private static final String FILE_NAME = "fileName";
 
   @Mock private FileStoreRepository fileStoreRepository;
   @Mock private FileService fileService;
   @Mock private MainConfiguration configuration;
+  @Mock private FileReferencedByHelper fileReferencedByHelper;
 
   @InjectMocks private FileStoreServiceImpl fileStoreService;
 
@@ -86,6 +85,8 @@ public class FileStoreServiceImplTest extends CategoryTest {
     when(fileStoreRepository.save(any())).thenAnswer(invocation -> invocation.getArguments()[0]);
 
     givenThatDatabaseIsEmpty();
+
+    when(fileReferencedByHelper.isFileReferencedByOtherEntities(any())).thenReturn(false);
   }
 
   @Test
