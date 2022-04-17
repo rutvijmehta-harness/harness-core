@@ -263,8 +263,11 @@ public class YamlGitConfigServiceImpl implements YamlGitConfigService {
              getYamlGitConfigScopeKey(gitSyncConfigDTO), Duration.ofMinutes(1), Duration.ofMinutes(2))) {
       final boolean wasGitSyncEnabled = isGitSyncEnabled(
           accountId, gitSyncConfigDTO.getOrganizationIdentifier(), gitSyncConfigDTO.getProjectIdentifier());
+      final boolean isNewRepoInProject = isNewRepoInProject(gitSyncConfigDTO);
       savedYamlGitConfig = yamlGitConfigRepository.save(yamlGitConfigToBeSaved);
-      registerWebhookAsync(gitSyncConfigDTO);
+      if (isNewRepoInProject) {
+        registerWebhookAsync(gitSyncConfigDTO);
+      }
       sendEventForGitSyncConfigChange(gitSyncConfigDTO, GitSyncConfigChangeEventType.SAVE_EVENT,
           wasGitSyncEnabled ? GitSyncConfigSwitchType.NONE : GitSyncConfigSwitchType.ENABLED);
       sendEventForConnectorSetupUsageChange(gitSyncConfigDTO);
@@ -291,11 +294,9 @@ public class YamlGitConfigServiceImpl implements YamlGitConfigService {
   }
 
   private void saveWebhook(YamlGitConfigDTO gitSyncConfigDTO) {
-    if (isNewRepoInProject(gitSyncConfigDTO)) {
-      final RetryPolicy<Object> retryPolicy = getWebhookRegistrationRetryPolicy(
-          "[Retrying] attempt: {} for failure case of save webhook call", "Failed to save webhook after {} attempts");
-      Failsafe.with(retryPolicy).get(() -> registerWebhook(gitSyncConfigDTO));
-    }
+    final RetryPolicy<Object> retryPolicy = getWebhookRegistrationRetryPolicy(
+        "[Retrying] attempt: {} for failure case of save webhook call", "Failed to save webhook after {} attempts");
+    Failsafe.with(retryPolicy).get(() -> registerWebhook(gitSyncConfigDTO));
   }
 
   private UpsertWebhookResponseDTO registerWebhook(YamlGitConfigDTO gitSyncConfigDTO) {
