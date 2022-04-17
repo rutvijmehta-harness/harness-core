@@ -19,6 +19,7 @@ import io.harness.delegate.beans.logstreaming.ILogStreamingTaskClient;
 import io.harness.delegate.task.AbstractDelegateRunnableTask;
 import io.harness.delegate.task.TaskParameters;
 import io.harness.eraro.ErrorCode;
+import io.harness.exception.ExceptionUtils;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -51,7 +52,7 @@ public class HostConnectivityValidationDelegateTask extends AbstractDelegateRunn
       return HostConnectivityTaskResponse.builder()
           .connectionSuccessful(false)
           .errorCode(ErrorCode.SOCKET_CONNECTION_ERROR)
-          .errorMessage(ex.getMessage())
+          .errorMessage(ExceptionUtils.getMessage(ex))
           .build();
     }
   }

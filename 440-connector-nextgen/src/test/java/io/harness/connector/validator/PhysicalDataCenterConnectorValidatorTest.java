@@ -21,7 +21,6 @@ import io.harness.CategoryTest;
 import io.harness.category.element.UnitTests;
 import io.harness.connector.ConnectivityStatus;
 import io.harness.connector.ConnectorValidationResult;
-import io.harness.connector.PhysicalDataCenterConnectorValidationResult;
 import io.harness.delegate.beans.connector.pdcconnector.HostDTO;
 import io.harness.delegate.beans.connector.pdcconnector.PhysicalDataCenterConnectorDTO;
 import io.harness.ng.core.dto.ErrorDetail;
@@ -63,13 +62,8 @@ public class PhysicalDataCenterConnectorValidatorTest extends CategoryTest {
             ORG_IDENTIFIER, PROJECT_IDENTIFIER, CONNECTOR_IDENTIFIER);
 
     assertThat(validationResult).isNotNull();
-    assertThat(validationResult).isInstanceOf(PhysicalDataCenterConnectorValidationResult.class);
-    PhysicalDataCenterConnectorValidationResult physicalDataCenterConnectorValidationResult =
-        (PhysicalDataCenterConnectorValidationResult) validationResult;
-    assertThat(physicalDataCenterConnectorValidationResult.getValidationPassedHosts()).isNotEmpty();
-    assertThat(physicalDataCenterConnectorValidationResult.getValidationPassedHosts()).contains("host1", "host2");
-    assertThat(physicalDataCenterConnectorValidationResult.getValidationFailedHosts()).isNull();
-    assertThat(physicalDataCenterConnectorValidationResult.getStatus()).isEqualTo(ConnectivityStatus.SUCCESS);
+    assertThat(validationResult).isInstanceOf(ConnectorValidationResult.class);
+    assertThat(validationResult.getStatus()).isEqualTo(ConnectivityStatus.SUCCESS);
   }
 
   @Test
@@ -96,19 +90,13 @@ public class PhysicalDataCenterConnectorValidatorTest extends CategoryTest {
             ORG_IDENTIFIER, PROJECT_IDENTIFIER, CONNECTOR_IDENTIFIER);
 
     assertThat(validationResult).isNotNull();
-    assertThat(validationResult).isInstanceOf(PhysicalDataCenterConnectorValidationResult.class);
-    PhysicalDataCenterConnectorValidationResult physicalDataCenterConnectorValidationResult =
-        (PhysicalDataCenterConnectorValidationResult) validationResult;
-    assertThat(physicalDataCenterConnectorValidationResult.getValidationPassedHosts()).isNotEmpty();
-    assertThat(physicalDataCenterConnectorValidationResult.getValidationPassedHosts()).contains("host1", "host2");
-    assertThat(physicalDataCenterConnectorValidationResult.getValidationFailedHosts()).isNotNull();
-    assertThat(physicalDataCenterConnectorValidationResult.getValidationFailedHosts()).contains("2.2.2.2");
-    assertThat(physicalDataCenterConnectorValidationResult.getErrors().get(0)).isNotNull();
-    assertThat(physicalDataCenterConnectorValidationResult.getErrors().get(0)).isInstanceOf(ErrorDetail.class);
-    ErrorDetail errorDetail = physicalDataCenterConnectorValidationResult.getErrors().get(0);
+    assertThat(validationResult).isInstanceOf(ConnectorValidationResult.class);
+    assertThat(validationResult.getErrors().get(0)).isNotNull();
+    assertThat(validationResult.getErrors().get(0)).isInstanceOf(ErrorDetail.class);
+    ErrorDetail errorDetail = validationResult.getErrors().get(0);
     assertThat(errorDetail.getMessage()).isEqualTo(errorMsg);
     assertThat(errorDetail.getReason()).isEqualTo(errorReason);
-    assertThat(physicalDataCenterConnectorValidationResult.getStatus()).isEqualTo(ConnectivityStatus.FAILURE);
+    assertThat(validationResult.getStatus()).isEqualTo(ConnectivityStatus.FAILURE);
   }
 
   private PhysicalDataCenterConnectorDTO getPhysicalDataCenterConnectorDTO() {
