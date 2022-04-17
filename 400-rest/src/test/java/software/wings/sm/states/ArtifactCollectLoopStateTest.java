@@ -46,8 +46,8 @@ import org.mockito.Spy;
 
 @OwnedBy(CDC)
 public class ArtifactCollectLoopStateTest extends WingsBaseTest {
-  private final static String ARTIFACT_STREAM_ID_1 = "ARTIFACT_STREAM_ID_1";
-  private final static String ARTIFACT_STREAM_ID_2 = "ARTIFACT_STREAM_ID_2";
+  private static final String ARTIFACT_STREAM_ID_1 = "ARTIFACT_STREAM_ID_1";
+  private static final String ARTIFACT_STREAM_ID_2 = "ARTIFACT_STREAM_ID_2";
   @Mock private StateExecutionInstanceHelper instanceHelper;
   @Mock private ExecutionContextImpl context;
 
@@ -98,7 +98,7 @@ public class ArtifactCollectLoopStateTest extends WingsBaseTest {
   @Test
   @Owner(developers = INDER)
   @Category(UnitTests.class)
-  public void testHandleAsyncResponse_OneFailed() {
+  public void testHandleAsyncResponseOneFailed() {
     Map<String, ResponseData> response = new HashMap<>();
     response.put("response1", ExecutionStatusData.builder().executionStatus(ExecutionStatus.SUCCESS).build());
     response.put("response2", ExecutionStatusData.builder().executionStatus(ExecutionStatus.FAILED).build());
@@ -111,7 +111,7 @@ public class ArtifactCollectLoopStateTest extends WingsBaseTest {
   @Test
   @Owner(developers = INDER)
   @Category(UnitTests.class)
-  public void testHandleAsyncResponse_AllSuccess() {
+  public void testHandleAsyncResponseAllSuccess() {
     Map<String, ResponseData> response = new HashMap<>();
     response.put("response1", ExecutionStatusData.builder().executionStatus(ExecutionStatus.SUCCESS).build());
     response.put("response2", ExecutionStatusData.builder().executionStatus(ExecutionStatus.SUCCESS).build());

@@ -466,7 +466,7 @@ public class ArtifactCollectionStateTest extends CategoryTest {
   @Test
   @Owner(developers = INDER)
   @Category(UnitTests.class)
-  public void testCollectJenkinsArtifactWithBuildNum_FFEnabled() {
+  public void testCollectJenkinsArtifactWithBuildNumFFEnabled() {
     String delegateTaskId = "delegateTaskId";
     when(featureFlagService.isEnabled(eq(DISABLE_ARTIFACT_COLLECTION), anyString())).thenReturn(true);
     artifactCollectionState.setBuildNo("1.0");
@@ -493,7 +493,7 @@ public class ArtifactCollectionStateTest extends CategoryTest {
   @Test
   @Owner(developers = INDER)
   @Category(UnitTests.class)
-  public void testCollectJenkinsArtifactWithEmptyBuildNum_FFEnabled() {
+  public void testCollectJenkinsArtifactWithEmptyBuildNumFFEnabled() {
     String delegateTaskId = "delegateTaskId";
     when(featureFlagService.isEnabled(eq(DISABLE_ARTIFACT_COLLECTION), anyString())).thenReturn(true);
     when(settingsService.get(anyString())).thenReturn(SettingAttribute.Builder.aSettingAttribute().build());
@@ -529,7 +529,7 @@ public class ArtifactCollectionStateTest extends CategoryTest {
   @Test
   @Owner(developers = INDER)
   @Category(UnitTests.class)
-  public void testCollectCustomArtifactWithBuildNum_FFEnabled() {
+  public void testCollectCustomArtifactWithBuildNumFFEnabled() {
     String delegateTaskId = "delegateTaskId";
     when(featureFlagService.isEnabled(eq(DISABLE_ARTIFACT_COLLECTION), anyString())).thenReturn(true);
     when(artifactStreamService.get(ARTIFACT_STREAM_ID)).thenReturn(customArtifactStream);
@@ -560,7 +560,7 @@ public class ArtifactCollectionStateTest extends CategoryTest {
   @Test
   @Owner(developers = INDER)
   @Category(UnitTests.class)
-  public void testCollectNexusArtifactWithBuildNum_FFEnabled() {
+  public void testCollectNexusArtifactWithBuildNumFFEnabled() {
     String delegateTaskId = "delegateTaskId";
     Map<String, Object> runtimeValues = new HashMap<>();
     runtimeValues.put("repo", "harness-maven");
@@ -594,7 +594,7 @@ public class ArtifactCollectionStateTest extends CategoryTest {
   @Test
   @Owner(developers = INDER)
   @Category(UnitTests.class)
-  public void testHandleAsyncResponseWithSuccessfulJenkinsArtifactCollection_FFEnabled() {
+  public void testHandleAsyncResponseWithSuccessfulJenkinsArtifactCollectionFFEnabled() {
     when(featureFlagService.isEnabled(eq(DISABLE_ARTIFACT_COLLECTION), anyString())).thenReturn(true);
     when(artifactStreamService.get(ARTIFACT_STREAM_ID)).thenReturn(jenkinsArtifactStream);
     artifactCollectionState.setBuildNo("1.0");
@@ -619,7 +619,7 @@ public class ArtifactCollectionStateTest extends CategoryTest {
   @Test
   @Owner(developers = INDER)
   @Category(UnitTests.class)
-  public void testHandleAsyncResponseWithFailJenkinsArtifactCollection_FFEnabled() {
+  public void testHandleAsyncResponseWithFailJenkinsArtifactCollectionFFEnabled() {
     when(featureFlagService.isEnabled(eq(DISABLE_ARTIFACT_COLLECTION), anyString())).thenReturn(true);
     when(artifactStreamService.get(ARTIFACT_STREAM_ID)).thenReturn(jenkinsArtifactStream);
     artifactCollectionState.setBuildNo("1.0");
@@ -645,7 +645,7 @@ public class ArtifactCollectionStateTest extends CategoryTest {
   @Test
   @Owner(developers = INDER)
   @Category(UnitTests.class)
-  public void testHandleAsyncResponseWithSuccessfulParameterisedArtifactCollection_FFEnabled() {
+  public void testHandleAsyncResponseWithSuccessfulParameterisedArtifactCollectionFFEnabled() {
     when(featureFlagService.isEnabled(eq(DISABLE_ARTIFACT_COLLECTION), anyString())).thenReturn(true);
     when(artifactStreamService.get(ARTIFACT_STREAM_ID)).thenReturn(nexusArtifactStream);
     Map<String, Object> runtimeValues = new HashMap<>();
@@ -676,7 +676,7 @@ public class ArtifactCollectionStateTest extends CategoryTest {
   @Test
   @Owner(developers = INDER)
   @Category(UnitTests.class)
-  public void testHandleAsyncResponseWithSuccessfulDuplicateJenkinsArtifactCollection_FFEnabled() {
+  public void testHandleAsyncResponseWithSuccessfulDuplicateJenkinsArtifactCollectionFFEnabled() {
     when(featureFlagService.isEnabled(eq(DISABLE_ARTIFACT_COLLECTION), anyString())).thenReturn(true);
     when(artifactStreamService.get(ARTIFACT_STREAM_ID)).thenReturn(jenkinsArtifactStream);
     artifactCollectionState.setBuildNo("1.0");
