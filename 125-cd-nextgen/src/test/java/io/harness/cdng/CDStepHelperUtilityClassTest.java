@@ -26,6 +26,7 @@ import org.powermock.modules.junit4.PowerMockRunner;
 
 @RunWith(PowerMockRunner.class)
 @PrepareForTest({Validator.class})
+@OwnedBy(HarnessTeam.CDP)
 public class CDStepHelperUtilityClassTest extends CategoryTest {
   @Test
   @Owner(developers = VLICA)
