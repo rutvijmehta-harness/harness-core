@@ -1,6 +1,5 @@
 package io.harness.cdng;
 
-import static io.harness.rule.OwnerRule.CDP;
 import static io.harness.rule.OwnerRule.VLICA;
 
 import static org.mockito.Matchers.eq;
@@ -26,6 +25,7 @@ import org.powermock.modules.junit4.PowerMockRunner;
 
 @RunWith(PowerMockRunner.class)
 @PrepareForTest({Validator.class})
+@OwnedBy(HarnessTeam.CDP)
 public class CDStepHelperUtilityClassTest extends CategoryTest {
   @Test
   @Owner(developers = VLICA)
