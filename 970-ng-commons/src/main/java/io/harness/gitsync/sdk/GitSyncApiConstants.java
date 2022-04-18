@@ -32,6 +32,7 @@ public class GitSyncApiConstants {
   public static final String ENTITY_TYPE = "entityType";
   public static final String SYNC_STATUS = "syncStatus";
   public static final String CONNECTOR_REF = "connectorRef";
+  public static final String STORE_TYPE = "storeType";
 
   public static final String BRANCH_PARAM_MESSAGE = "Name of the branch.";
   public static final String FILEPATH_PARAM_MESSAGE = "File Path of the Entity.";
@@ -50,4 +51,5 @@ public class GitSyncApiConstants {
 
   public static final String GIT_CONNECTOR_REF_PARAM_MESSAGE =
       "Identifier of Connector needed for CRUD operations on the respective Entity";
+  public static final String STORE_TYPE_PARAM_MESSAGE = "Tells whether the Entity is to be saved on Git or not";
 }
