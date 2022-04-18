@@ -13,18 +13,8 @@ import static io.harness.beans.FeatureName.GITHUB_WEBHOOK_AUTHENTICATION;
 import static io.harness.beans.PageResponse.PageResponseBuilder.aPageResponse;
 import static io.harness.beans.WorkflowType.ORCHESTRATION;
 import static io.harness.beans.WorkflowType.PIPELINE;
-import static io.harness.rule.OwnerRule.AADITI;
-import static io.harness.rule.OwnerRule.AGORODETKI;
-import static io.harness.rule.OwnerRule.DEEPAK_PUTHRAYA;
-import static io.harness.rule.OwnerRule.HARSH;
-import static io.harness.rule.OwnerRule.HINGER;
-import static io.harness.rule.OwnerRule.INDER;
-import static io.harness.rule.OwnerRule.MILOS;
-import static io.harness.rule.OwnerRule.MOUNIK;
-import static io.harness.rule.OwnerRule.POOJA;
-import static io.harness.rule.OwnerRule.PRABU;
-import static io.harness.rule.OwnerRule.SRINIVAS;
 
+import static io.harness.rule.OwnerRule.*;
 import static software.wings.api.CloudProviderType.AWS;
 import static software.wings.api.DeploymentType.SSH;
 import static software.wings.beans.AwsInfrastructureMapping.Builder.anAwsInfrastructureMapping;
@@ -527,7 +517,7 @@ public class TriggerServiceTest extends WingsBaseTest {
     verify(pipelineService, times(2)).readPipeline(APP_ID, PIPELINE_ID, true);
   }
   @Test
-  @Owner(developers = POOJA)
+  @Owner(developers = ATHARVA)
   @Category(UnitTests.class)
   public void shouldValidateWorkflowVariables() {
     Map<String, String> workflowVariables = new HashMap<>();
