@@ -70,7 +70,9 @@ public class ServiceNowCreateStep extends TaskExecutableWithRollbackAndRbac<Serv
             .action(ServiceNowActionNG.CREATE_TICKET)
             .ticketType(specParameters.getTicketType().getValue())
             .templateName(specParameters.getTemplateName().getValue())
-            .useServiceNowTemplate(specParameters.getUseServiceNowTemplate().getValue())
+            .useServiceNowTemplate(specParameters.getUseServiceNowTemplate().getValue() == null
+                    ? false
+                    : specParameters.getUseServiceNowTemplate().getValue())
             .delegateSelectors(
                 StepUtils.getDelegateSelectorListFromTaskSelectorYaml(specParameters.getDelegateSelectors()))
             .fields(ServiceNowStepUtils.processServiceNowFieldsInSpec(specParameters.getFields()));
