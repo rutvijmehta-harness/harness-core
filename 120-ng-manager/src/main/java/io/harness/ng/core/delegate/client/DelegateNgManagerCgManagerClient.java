@@ -17,6 +17,7 @@ import io.harness.delegate.beans.DelegateMtlsEndpointRequest;
 import io.harness.delegate.beans.DelegateSetupDetails;
 import io.harness.delegate.beans.DelegateTokenDetails;
 import io.harness.delegate.beans.DelegateTokenStatus;
+import io.harness.delegate.utils.DelegateMtlsApiConstants;
 import io.harness.rest.RestResponse;
 
 import java.util.List;
@@ -35,8 +36,10 @@ import retrofit2.http.Query;
 public interface DelegateNgManagerCgManagerClient {
   String DELEGATE_TOKEN_NG_API = "delegate-token/ng";
   String DELEGATE_GROUP_TAGS_API = "delegate-group-tags-internal";
-  String DELEGATE_MTLS_ENDPOINT_API = "delegate-mtls/ng/endpoint";
-  String DELEGATE_MTLS_PREFIX_AVAILABLE_API = "delegate-mtls/ng/check-availability";
+  String DELEGATE_MTLS_ENDPOINT_API =
+      DelegateMtlsApiConstants.API_ROOT_RELATIVE_NG_INTERNAL + "/" + DelegateMtlsApiConstants.API_PATH_ENDPOINT;
+  String DELEGATE_MTLS_PREFIX_AVAILABLE_API = DelegateMtlsApiConstants.API_ROOT_RELATIVE_NG_INTERNAL + "/"
+      + DelegateMtlsApiConstants.API_PATH_CHECK_AVAILABILITY;
 
   //------------------------ Delegate Token -------------------------------------
 
@@ -118,12 +121,12 @@ public interface DelegateNgManagerCgManagerClient {
 
   //------------------------ Delegate mTLS Endpoint Apis -----------------------------------
 
-  @PUT(DELEGATE_MTLS_ENDPOINT_API)
+  @POST(DELEGATE_MTLS_ENDPOINT_API)
   Call<RestResponse<DelegateMtlsEndpointDetails>> createEndpointForAccount(
       @Query(NGCommonEntityConstants.ACCOUNT_KEY) @NotNull String accountIdentifier,
       @Body @NotNull DelegateMtlsEndpointRequest endpointRequest);
 
-  @POST(DELEGATE_MTLS_ENDPOINT_API)
+  @PUT(DELEGATE_MTLS_ENDPOINT_API)
   Call<RestResponse<DelegateMtlsEndpointDetails>> updateEndpointForAccount(
       @Query(NGCommonEntityConstants.ACCOUNT_KEY) @NotNull String accountIdentifier,
       @Body @NotNull DelegateMtlsEndpointRequest endpointRequest);
@@ -142,5 +145,6 @@ public interface DelegateNgManagerCgManagerClient {
       @Query(NGCommonEntityConstants.ACCOUNT_KEY) @NotNull String accountIdentifier);
 
   @GET(DELEGATE_MTLS_PREFIX_AVAILABLE_API)
-  Call<RestResponse<Boolean>> isDomainPrefixAvailable(@Query("domainPrefix") @NotNull String domainPrefix);
+  Call<RestResponse<Boolean>> isDomainPrefixAvailable(
+      @Query(DelegateMtlsApiConstants.API_PARAM_DOMAIN_PREFIX_NAME) @NotNull String domainPrefix);
 }

@@ -17,7 +17,7 @@ import io.harness.annotations.dev.HarnessTeam;
 import io.harness.annotations.dev.OwnedBy;
 import io.harness.delegate.beans.DelegateMtlsEndpointDetails;
 import io.harness.delegate.beans.DelegateMtlsEndpointRequest;
-import io.harness.delegate.utils.DelegateMtlsConstants;
+import io.harness.delegate.utils.DelegateMtlsApiConstants;
 import io.harness.exception.InvalidRequestException;
 import io.harness.exception.UnauthorizedException;
 import io.harness.logging.AccountLogContext;
@@ -36,6 +36,7 @@ import com.codahale.metrics.annotation.Timed;
 import com.google.inject.Inject;
 import io.dropwizard.jersey.PATCH;
 import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
 import javax.validation.constraints.NotNull;
 import javax.ws.rs.Consumes;
@@ -54,8 +55,8 @@ import lombok.extern.slf4j.Slf4j;
  * Note:
  *    As of now limited access for harness support only.
  */
-@Api(DelegateMtlsConstants.API_PATH)
-@Path(DelegateMtlsConstants.API_PATH)
+@Api(DelegateMtlsApiConstants.API_ROOT)
+@Path(DelegateMtlsApiConstants.API_ROOT)
 @Produces("application/json")
 @Consumes("application/json")
 @Scope(DELEGATE)
@@ -75,15 +76,17 @@ public class DelegateMtlsEndpointResource {
     this.harnessUserGroupService = harnessUserGroupService;
   }
 
-  @PUT
-  @Path(DelegateMtlsConstants.API_PATH_ENDPOINT)
+  @POST
+  @Path(DelegateMtlsApiConstants.API_PATH_ENDPOINT)
   @Timed
   @ExceptionMetered
   @AuthRule(permissionType = ACCOUNT_MANAGEMENT)
-  public RestResponse<DelegateMtlsEndpointDetails> createEndpointForAccount(
-      @ApiParam(required = true, value = ACCOUNT_ID_DESCRIPTION) @QueryParam(
-          ACCOUNT_ID_PARAM) @NotNull String accountId,
-      @ApiParam(required = true, value = "The details of the delegate mTLS endpoint to create.")
+  @ApiOperation(nickname = DelegateMtlsApiConstants.API_OPERATION_ENDPOINT_CREATE_NAME,
+      value = DelegateMtlsApiConstants.API_OPERATION_ENDPOINT_CREATE_DESC)
+  public RestResponse<DelegateMtlsEndpointDetails>
+  createEndpointForAccount(@ApiParam(required = true, value = ACCOUNT_ID_DESCRIPTION) @QueryParam(
+                               ACCOUNT_ID_PARAM) @NotNull String accountId,
+      @ApiParam(required = true, value = DelegateMtlsApiConstants.API_PARAM_CREATE_REQUEST_DESC)
       @NotNull DelegateMtlsEndpointRequest endpointRequest) {
     try (AutoLogContext ignore1 = new AccountLogContext(accountId, OVERRIDE_ERROR)) {
       this.ensureOperationIsExecutedByHarnessSupport();
@@ -91,15 +94,17 @@ public class DelegateMtlsEndpointResource {
     }
   }
 
-  @POST
-  @Path(DelegateMtlsConstants.API_PATH_ENDPOINT)
+  @PUT
+  @Path(DelegateMtlsApiConstants.API_PATH_ENDPOINT)
   @Timed
   @ExceptionMetered
   @AuthRule(permissionType = ACCOUNT_MANAGEMENT)
-  public RestResponse<DelegateMtlsEndpointDetails> updateEndpointForAccount(
-      @ApiParam(required = true, value = ACCOUNT_ID_DESCRIPTION) @QueryParam(
-          ACCOUNT_ID_PARAM) @NotNull String accountId,
-      @ApiParam(required = true, value = "The updated details of the delegate mTLS endpoint.")
+  @ApiOperation(nickname = DelegateMtlsApiConstants.API_OPERATION_ENDPOINT_UPDATE_NAME,
+      value = DelegateMtlsApiConstants.API_OPERATION_ENDPOINT_UPDATE_DESC)
+  public RestResponse<DelegateMtlsEndpointDetails>
+  updateEndpointForAccount(@ApiParam(required = true, value = ACCOUNT_ID_DESCRIPTION) @QueryParam(
+                               ACCOUNT_ID_PARAM) @NotNull String accountId,
+      @ApiParam(required = true, value = DelegateMtlsApiConstants.API_PARAM_UPDATE_REQUEST_DESC)
       @NotNull DelegateMtlsEndpointRequest endpointRequest) {
     try (AutoLogContext ignore1 = new AccountLogContext(accountId, OVERRIDE_ERROR)) {
       this.ensureOperationIsExecutedByHarnessSupport();
@@ -108,14 +113,16 @@ public class DelegateMtlsEndpointResource {
   }
 
   @PATCH
-  @Path(DelegateMtlsConstants.API_PATH_ENDPOINT)
+  @Path(DelegateMtlsApiConstants.API_PATH_ENDPOINT)
   @Timed
   @ExceptionMetered
   @AuthRule(permissionType = ACCOUNT_MANAGEMENT)
-  public RestResponse<DelegateMtlsEndpointDetails> patchEndpointForAccount(
-      @ApiParam(required = true, value = ACCOUNT_ID_DESCRIPTION) @QueryParam(
-          ACCOUNT_ID_PARAM) @NotNull String accountId,
-      @ApiParam(required = true, value = "A subset of the details to update for the delegate mTLS endpoint.")
+  @ApiOperation(nickname = DelegateMtlsApiConstants.API_OPERATION_ENDPOINT_PATCH_NAME,
+      value = DelegateMtlsApiConstants.API_OPERATION_ENDPOINT_PATCH_DESC)
+  public RestResponse<DelegateMtlsEndpointDetails>
+  patchEndpointForAccount(@ApiParam(required = true, value = ACCOUNT_ID_DESCRIPTION) @QueryParam(
+                              ACCOUNT_ID_PARAM) @NotNull String accountId,
+      @ApiParam(required = true, value = DelegateMtlsApiConstants.API_PARAM_PATCH_REQUEST_DESC)
       @NotNull DelegateMtlsEndpointRequest patchRequest) {
     try (AutoLogContext ignore1 = new AccountLogContext(accountId, OVERRIDE_ERROR)) {
       this.ensureOperationIsExecutedByHarnessSupport();
@@ -124,12 +131,15 @@ public class DelegateMtlsEndpointResource {
   }
 
   @DELETE
-  @Path(DelegateMtlsConstants.API_PATH_ENDPOINT)
+  @Path(DelegateMtlsApiConstants.API_PATH_ENDPOINT)
   @Timed
   @ExceptionMetered
   @AuthRule(permissionType = ACCOUNT_MANAGEMENT)
-  public RestResponse<Boolean> deleteEndpointForAccount(@ApiParam(
-      required = true, value = ACCOUNT_ID_DESCRIPTION) @QueryParam(ACCOUNT_ID_PARAM) @NotNull String accountId) {
+  @ApiOperation(nickname = DelegateMtlsApiConstants.API_OPERATION_ENDPOINT_DELETE_NAME,
+      value = DelegateMtlsApiConstants.API_OPERATION_ENDPOINT_DELETE_DESC)
+  public RestResponse<Boolean>
+  deleteEndpointForAccount(@ApiParam(required = true, value = ACCOUNT_ID_DESCRIPTION) @QueryParam(
+      ACCOUNT_ID_PARAM) @NotNull String accountId) {
     try (AutoLogContext ignore1 = new AccountLogContext(accountId, OVERRIDE_ERROR)) {
       this.ensureOperationIsExecutedByHarnessSupport();
       return new RestResponse<>(this.delegateMtlsEndpointService.deleteEndpointForAccount(accountId));
@@ -137,12 +147,15 @@ public class DelegateMtlsEndpointResource {
   }
 
   @GET
-  @Path(DelegateMtlsConstants.API_PATH_ENDPOINT)
+  @Path(DelegateMtlsApiConstants.API_PATH_ENDPOINT)
   @Timed
   @ExceptionMetered
   @AuthRule(permissionType = ACCOUNT_MANAGEMENT)
-  public RestResponse<DelegateMtlsEndpointDetails> getEndpointForAccount(@ApiParam(
-      required = true, value = ACCOUNT_ID_DESCRIPTION) @QueryParam(ACCOUNT_ID_PARAM) @NotNull String accountId) {
+  @ApiOperation(nickname = DelegateMtlsApiConstants.API_OPERATION_ENDPOINT_GET_NAME,
+      value = DelegateMtlsApiConstants.API_OPERATION_ENDPOINT_GET_DESC)
+  public RestResponse<DelegateMtlsEndpointDetails>
+  getEndpointForAccount(@ApiParam(required = true, value = ACCOUNT_ID_DESCRIPTION) @QueryParam(
+      ACCOUNT_ID_PARAM) @NotNull String accountId) {
     try (AutoLogContext ignore1 = new AccountLogContext(accountId, OVERRIDE_ERROR)) {
       this.ensureOperationIsExecutedByHarnessSupport();
       return new RestResponse<>(this.delegateMtlsEndpointService.getEndpointForAccount(accountId));
@@ -150,13 +163,15 @@ public class DelegateMtlsEndpointResource {
   }
 
   @GET
-  @Path(DelegateMtlsConstants.API_PATH_ENDPOINT_CHECK_AVAILABILITY)
+  @Path(DelegateMtlsApiConstants.API_PATH_CHECK_AVAILABILITY)
   @Timed
   @ExceptionMetered
   @AuthRule(skipAuth = true)
-  public RestResponse<Boolean> isDomainPrefixAvailable(
-      @ApiParam(required = true, value = DelegateMtlsConstants.API_PARAM_DESCRIPTION_DOMAIN_PREFIX) @QueryParam(
-          DelegateMtlsConstants.API_PARAM_NAME_DOMAIN_PREFIX) @NotNull String domainPrefix) {
+  @ApiOperation(nickname = DelegateMtlsApiConstants.API_OPERATION_ENDPOINT_CHECK_AVAILABILITY_NAME,
+      value = DelegateMtlsApiConstants.API_OPERATION_ENDPOINT_CHECK_AVAILABILITY_DESC)
+  public RestResponse<Boolean>
+  isDomainPrefixAvailable(@ApiParam(required = true, value = DelegateMtlsApiConstants.API_PARAM_DOMAIN_PREFIX_DESC)
+      @QueryParam(DelegateMtlsApiConstants.API_PARAM_DOMAIN_PREFIX_NAME) @NotNull String domainPrefix) {
     this.ensureOperationIsExecutedByHarnessSupport();
     return new RestResponse<>(this.delegateMtlsEndpointService.isDomainPrefixAvailable(domainPrefix));
   }

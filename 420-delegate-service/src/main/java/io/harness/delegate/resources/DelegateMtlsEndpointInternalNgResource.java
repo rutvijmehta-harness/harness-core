@@ -17,7 +17,7 @@ import io.harness.annotations.dev.HarnessTeam;
 import io.harness.annotations.dev.OwnedBy;
 import io.harness.delegate.beans.DelegateMtlsEndpointDetails;
 import io.harness.delegate.beans.DelegateMtlsEndpointRequest;
-import io.harness.delegate.utils.DelegateMtlsConstants;
+import io.harness.delegate.utils.DelegateMtlsApiConstants;
 import io.harness.logging.AccountLogContext;
 import io.harness.logging.AutoLogContext;
 import io.harness.rest.RestResponse;
@@ -30,9 +30,9 @@ import com.codahale.metrics.annotation.ExceptionMetered;
 import com.codahale.metrics.annotation.Timed;
 import com.google.inject.Inject;
 import io.dropwizard.jersey.PATCH;
-import io.swagger.annotations.Api;
 import io.swagger.v3.oas.annotations.Hidden;
 import javax.validation.constraints.NotNull;
+import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
@@ -45,9 +45,9 @@ import lombok.extern.slf4j.Slf4j;
 /**
  * Exposes the internal delegate mTLS endpoint management REST Api on CG which is called by NG.
  */
-@Api(DelegateMtlsConstants.API_PATH_NG_INTERNAL)
-@Path(DelegateMtlsConstants.API_PATH_NG_INTERNAL)
+@Path(DelegateMtlsApiConstants.API_ROOT_NG_INTERNAL)
 @Produces("application/json")
+@Consumes("application/json")
 @Scope(DELEGATE)
 @Slf4j
 @OwnedBy(HarnessTeam.DEL)
@@ -60,8 +60,8 @@ public class DelegateMtlsEndpointInternalNgResource {
     this.delegateMtlsEndpointService = delegateMtlsEndpointService;
   }
 
-  @PUT
-  @Path(DelegateMtlsConstants.API_PATH_ENDPOINT)
+  @POST
+  @Path(DelegateMtlsApiConstants.API_PATH_ENDPOINT)
   @Timed
   @ExceptionMetered
   @InternalApi
@@ -75,8 +75,8 @@ public class DelegateMtlsEndpointInternalNgResource {
     }
   }
 
-  @POST
-  @Path(DelegateMtlsConstants.API_PATH_ENDPOINT)
+  @PUT
+  @Path(DelegateMtlsApiConstants.API_PATH_ENDPOINT)
   @Timed
   @ExceptionMetered
   @InternalApi
@@ -91,7 +91,7 @@ public class DelegateMtlsEndpointInternalNgResource {
   }
 
   @PATCH
-  @Path(DelegateMtlsConstants.API_PATH_ENDPOINT)
+  @Path(DelegateMtlsApiConstants.API_PATH_ENDPOINT)
   @Timed
   @ExceptionMetered
   @InternalApi
@@ -106,7 +106,7 @@ public class DelegateMtlsEndpointInternalNgResource {
   }
 
   @DELETE
-  @Path(DelegateMtlsConstants.API_PATH_ENDPOINT)
+  @Path(DelegateMtlsApiConstants.API_PATH_ENDPOINT)
   @Timed
   @ExceptionMetered
   @InternalApi
@@ -119,7 +119,7 @@ public class DelegateMtlsEndpointInternalNgResource {
   }
 
   @GET
-  @Path(DelegateMtlsConstants.API_PATH_ENDPOINT)
+  @Path(DelegateMtlsApiConstants.API_PATH_ENDPOINT)
   @Timed
   @ExceptionMetered
   @InternalApi
@@ -132,13 +132,13 @@ public class DelegateMtlsEndpointInternalNgResource {
   }
 
   @GET
-  @Path(DelegateMtlsConstants.API_PATH_ENDPOINT_CHECK_AVAILABILITY)
+  @Path(DelegateMtlsApiConstants.API_PATH_CHECK_AVAILABILITY)
   @Timed
   @ExceptionMetered
   @InternalApi
   @Hidden
   public RestResponse<Boolean> isDomainPrefixAvailable(
-      @QueryParam(DelegateMtlsConstants.API_PARAM_NAME_DOMAIN_PREFIX) @NotNull String domainPrefix) {
+      @QueryParam(DelegateMtlsApiConstants.API_PARAM_DOMAIN_PREFIX_NAME) @NotNull String domainPrefix) {
     return new RestResponse<>(this.delegateMtlsEndpointService.isDomainPrefixAvailable(domainPrefix));
   }
 }
