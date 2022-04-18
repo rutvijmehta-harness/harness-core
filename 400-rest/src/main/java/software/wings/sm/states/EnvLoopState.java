@@ -51,7 +51,7 @@ import org.mongodb.morphia.annotations.Transient;
 @Slf4j
 @FieldNameConstants(innerTypeName = "EnvLoopStateKeys")
 public class EnvLoopState extends State implements WorkflowState {
-  @EnumData(enumDataProvider = WorkflowServiceImpl.class) @Getter @Setter private String workflowId;
+  @Getter @Setter private String workflowId;
 
   @Getter @Setter private String pipelineId;
   @Getter @Setter private String pipelineStageElementId;

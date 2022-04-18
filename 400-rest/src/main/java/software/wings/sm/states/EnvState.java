@@ -120,7 +120,6 @@ public class EnvState extends State implements WorkflowState {
   public static final Integer ENV_STATE_TIMEOUT_MILLIS = 7 * 24 * 60 * 60 * 1000;
 
   // NOTE: This field should no longer be used. It contains incorrect/stale values.
-  @Expand(dataProvider = EnvironmentServiceImpl.class)
   @Attributes(required = true, title = "Environment")
   @Setter
   @Deprecated
@@ -388,7 +387,7 @@ public class EnvState extends State implements WorkflowState {
     context.getStateExecutionData().setErrorMsg(
         "Workflow not completed within " + Misc.getDurationString(getTimeoutMillis()));
     try {
-      EnvStateExecutionData envStateExecutionData = (EnvStateExecutionData) context.getStateExecutionData();
+      EnvStateExecutionData envStateExecutionData = context.getStateExecutionData();
       if (envStateExecutionData != null && envStateExecutionData.getWorkflowExecutionId() != null) {
         ExecutionInterrupt executionInterrupt = anExecutionInterrupt()
                                                     .executionInterruptType(ExecutionInterruptType.ABORT_ALL)
@@ -414,7 +413,7 @@ public class EnvState extends State implements WorkflowState {
       return executionResponseBuilder.build();
     }
 
-    EnvStateExecutionData stateExecutionData = (EnvStateExecutionData) context.getStateExecutionData();
+    EnvStateExecutionData stateExecutionData = context.getStateExecutionData();
     if (stateExecutionData.getOrchestrationWorkflowType() == OrchestrationWorkflowType.BUILD) {
       if (!featureFlagService.isEnabled(FeatureName.ARTIFACT_STREAM_REFACTOR, context.getAccountId())) {
         saveArtifactAndManifestElements(context, stateExecutionData);
