@@ -22,9 +22,7 @@ import static io.harness.exception.WingsException.USER;
 import static io.harness.validation.Validator.notNullCheck;
 
 import static software.wings.beans.CGConstants.GLOBAL_ENV_ID;
-import static software.wings.beans.EntityType.ENVIRONMENT;
-import static software.wings.beans.EntityType.SERVICE;
-import static software.wings.beans.EntityType.SERVICE_TEMPLATE;
+import static software.wings.beans.EntityType.*;
 import static software.wings.beans.Environment.Builder.anEnvironment;
 import static software.wings.beans.Service.ServiceKeys;
 import static software.wings.beans.ServiceTemplate.ServiceTemplateKeys;
@@ -39,7 +37,6 @@ import static software.wings.yaml.YamlHelper.trimYaml;
 
 import static java.lang.String.format;
 import static java.time.Duration.ofSeconds;
-import static java.util.stream.Collectors.toMap;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.atteo.evo.inflector.English.plural;
@@ -113,7 +110,6 @@ import software.wings.service.intfc.instance.InstanceService;
 import software.wings.service.intfc.ownership.OwnedByEnvironment;
 import software.wings.service.intfc.verification.CVConfigurationService;
 import software.wings.service.intfc.yaml.YamlPushService;
-import software.wings.stencils.DataProvider;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Joiner;
