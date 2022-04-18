@@ -238,7 +238,7 @@ public class SLIRecordServiceImpl implements SLIRecordService {
       minutes.add(current);
     }
     minutes.add(endTime.minus(Duration.ofMinutes(1)));
-    minutes.add(lastRecord.getTimestamp().minus(Duration.ofMinutes(1))); // always include start and end minute.
+    minutes.add(lastRecord.getTimestamp()); // always include start and end minute.
     return hPersistence.createQuery(SLIRecord.class, excludeAuthorityCount)
         .filter(SLIRecordKeys.sliId, sliId)
         .field(SLIRecordKeys.timestamp)
