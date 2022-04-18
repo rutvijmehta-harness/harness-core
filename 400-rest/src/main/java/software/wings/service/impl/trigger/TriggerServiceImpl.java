@@ -1416,7 +1416,7 @@ public class TriggerServiceImpl implements TriggerService {
     return workflowExecution;
   }
 
-  private void validateWorkflowVariable(Map<String, String> workflowVariables, List<Variable> allowedValues) {
+  static void validateWorkflowVariable(Map<String, String> workflowVariables, List<Variable> allowedValues) {
     for (Variable x : allowedValues) {
       if (isNotEmpty(x.getAllowedValues())) {
         List<String> allowedVals = Arrays.asList(x.getAllowedValues().split(","));
