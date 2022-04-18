@@ -70,30 +70,16 @@ import io.harness.cvng.core.beans.monitoredService.healthSouceSpec.MetricRespons
 import io.harness.cvng.core.beans.params.MonitoredServiceParams;
 import io.harness.cvng.core.beans.params.ProjectParams;
 import io.harness.cvng.core.beans.params.ServiceEnvironmentParams;
-import io.harness.cvng.core.entities.AnalysisInfo;
-import io.harness.cvng.core.entities.AppDynamicsCVConfig;
+import io.harness.cvng.core.entities.*;
 import io.harness.cvng.core.entities.AppDynamicsCVConfig.AppDynamicsCVConfigBuilder;
-import io.harness.cvng.core.entities.CVConfig;
-import io.harness.cvng.core.entities.CustomHealthLogCVConfig;
-import io.harness.cvng.core.entities.CustomHealthMetricCVConfig;
-import io.harness.cvng.core.entities.DatadogLogCVConfig;
 import io.harness.cvng.core.entities.DatadogLogCVConfig.DatadogLogCVConfigBuilder;
-import io.harness.cvng.core.entities.DatadogMetricCVConfig;
 import io.harness.cvng.core.entities.DatadogMetricCVConfig.DatadogMetricCVConfigBuilder;
-import io.harness.cvng.core.entities.DynatraceCVConfig;
 import io.harness.cvng.core.entities.DynatraceCVConfig.DynatraceCVConfigBuilder;
-import io.harness.cvng.core.entities.ErrorTrackingCVConfig;
 import io.harness.cvng.core.entities.ErrorTrackingCVConfig.ErrorTrackingCVConfigBuilder;
-import io.harness.cvng.core.entities.MetricPack;
-import io.harness.cvng.core.entities.NewRelicCVConfig;
 import io.harness.cvng.core.entities.NewRelicCVConfig.NewRelicCVConfigBuilder;
-import io.harness.cvng.core.entities.PrometheusCVConfig;
 import io.harness.cvng.core.entities.PrometheusCVConfig.PrometheusCVConfigBuilder;
-import io.harness.cvng.core.entities.SplunkCVConfig;
 import io.harness.cvng.core.entities.SplunkCVConfig.SplunkCVConfigBuilder;
-import io.harness.cvng.core.entities.StackdriverCVConfig;
 import io.harness.cvng.core.entities.StackdriverCVConfig.StackdriverCVConfigBuilder;
-import io.harness.cvng.core.entities.StackdriverLogCVConfig;
 import io.harness.cvng.core.entities.StackdriverLogCVConfig.StackdriverLogCVConfigBuilder;
 import io.harness.cvng.core.entities.changeSource.HarnessCDChangeSource;
 import io.harness.cvng.core.entities.changeSource.HarnessCDChangeSource.HarnessCDChangeSourceBuilder;
@@ -1078,5 +1064,16 @@ public class BuilderFactory {
         .endTime(endTime.toEpochMilli())
         .createdAt(createdAt)
         .traceableType(TraceableType.VERIFICATION_TASK);
+  }
+
+  public DeletedCVConfig getDeletedCVConfig() {
+    CVConfig cvConfig = appDynamicsCVConfigBuilder().uuid(generateUuid()).build();
+    return DeletedCVConfig.builder()
+        .cvConfig(cvConfig)
+        .accountId(context.getAccountId())
+        .createdAt(CVNGTestConstants.FIXED_TIME_FOR_TESTS.instant().toEpochMilli())
+        .uuid(generateUuid())
+        .dataCollectionTaskIteration(5)
+        .build();
   }
 }

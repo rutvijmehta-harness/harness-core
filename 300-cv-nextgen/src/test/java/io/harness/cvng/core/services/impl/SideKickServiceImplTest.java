@@ -8,6 +8,7 @@
 package io.harness.cvng.core.services.impl;
 
 import static io.harness.rule.OwnerRule.ARPITJ;
+import static io.harness.rule.OwnerRule.DHRUVX;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Matchers.any;
@@ -18,6 +19,7 @@ import static org.mockito.Mockito.doThrow;
 import io.harness.CvNextGenTestBase;
 import io.harness.category.element.UnitTests;
 import io.harness.cvng.BuilderFactory;
+import io.harness.cvng.core.beans.sidekick.CVConfigCleanupSideKickData;
 import io.harness.cvng.core.beans.sidekick.RetryChangeSourceHandleDeleteSideKickData;
 import io.harness.cvng.core.entities.SideKick;
 import io.harness.cvng.core.entities.SideKick.SidekickKeys;
@@ -26,6 +28,7 @@ import io.harness.cvng.core.entities.SideKick.Type;
 import io.harness.cvng.core.entities.changeSource.PagerDutyChangeSource;
 import io.harness.cvng.core.services.api.SideKickExecutor;
 import io.harness.cvng.core.services.api.SideKickExecutor.RetryData;
+import io.harness.cvng.core.services.impl.sidekickexecutors.CVConfigCleanupSideKickExecutor;
 import io.harness.cvng.core.services.impl.sidekickexecutors.RetryChangeSourceHandleDeleteSideKickExecutor;
 import io.harness.persistence.HPersistence;
 import io.harness.rule.Owner;
@@ -54,13 +57,17 @@ public class SideKickServiceImplTest extends CvNextGenTestBase {
   private BuilderFactory builderFactory;
 
   RetryChangeSourceHandleDeleteSideKickExecutor retryChangeSourceHandleDeleteSideKickExecutor;
+  CVConfigCleanupSideKickExecutor cvConfigCleanupSideKickExecutor;
+
   @SneakyThrows
   @Before
   public void setup() {
     builderFactory = BuilderFactory.getDefault();
     typeSideKickExecutorMap = new HashMap<>();
     retryChangeSourceHandleDeleteSideKickExecutor = Mockito.mock(RetryChangeSourceHandleDeleteSideKickExecutor.class);
+    cvConfigCleanupSideKickExecutor = Mockito.mock(CVConfigCleanupSideKickExecutor.class);
     typeSideKickExecutorMap.put(Type.RETRY_CHANGE_SOURCE_HANDLE_DELETE, retryChangeSourceHandleDeleteSideKickExecutor);
+    typeSideKickExecutorMap.put(Type.DELETE_CV_CONFIG, cvConfigCleanupSideKickExecutor);
     FieldUtils.writeField(sideKickService, "typeSideKickExecutorMap", typeSideKickExecutorMap, true);
     FieldUtils.writeField(sideKickService, "clock", Clock.systemDefaultZone(), true);
   }
@@ -134,6 +141,17 @@ public class SideKickServiceImplTest extends CvNextGenTestBase {
     SideKick sideKick = hPersistence.createQuery(SideKick.class).order(Sort.descending(SidekickKeys.createdAt)).get();
 
     assertThat(sideKick.getStatus()).isEqualTo(Status.FAILED);
+  }
+
+  @Test
+  @Owner(developers = DHRUVX)
+  @Category(UnitTests.class)
+  public void test_schedule_cv_cleanup() {
+    CVConfigCleanupSideKickData sideKickData =
+        CVConfigCleanupSideKickData.builder().deletedCVConfig(builderFactory.getDeletedCVConfig()).build();
+    sideKickService.schedule(sideKickData, Instant.now().plusSeconds(300));
+    SideKick sideKick = hPersistence.createQuery(SideKick.class).order(Sort.descending(SidekickKeys.createdAt)).get();
+    assertThat(sideKick.getSideKickData()).isEqualTo(sideKickData);
   }
 
   private RetryChangeSourceHandleDeleteSideKickData createRetryChangeSourceHandleDeleteSideKick() {

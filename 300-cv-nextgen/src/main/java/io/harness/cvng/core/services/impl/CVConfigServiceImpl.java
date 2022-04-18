@@ -17,12 +17,14 @@ import static java.util.stream.Collectors.toList;
 import io.harness.cvng.beans.DataSourceType;
 import io.harness.cvng.core.beans.params.MonitoredServiceParams;
 import io.harness.cvng.core.beans.params.ProjectParams;
+import io.harness.cvng.core.beans.sidekick.CVConfigCleanupSideKickData;
 import io.harness.cvng.core.entities.CVConfig;
 import io.harness.cvng.core.entities.CVConfig.CVConfigKeys;
 import io.harness.cvng.core.entities.CVConfig.CVConfigUpdatableEntity;
 import io.harness.cvng.core.entities.DeletedCVConfig;
 import io.harness.cvng.core.services.api.CVConfigService;
 import io.harness.cvng.core.services.api.DeletedCVConfigService;
+import io.harness.cvng.core.services.api.SideKickService;
 import io.harness.cvng.core.services.api.UpdatableEntity;
 import io.harness.cvng.core.services.api.VerificationTaskService;
 import io.harness.encryption.Scope;
@@ -32,11 +34,13 @@ import com.google.common.base.Preconditions;
 import com.google.inject.Inject;
 import com.mongodb.BasicDBObject;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import javax.validation.constraints.NotNull;
@@ -50,6 +54,7 @@ public class CVConfigServiceImpl implements CVConfigService {
   @Inject private DeletedCVConfigService deletedCVConfigService;
   @Inject private VerificationTaskService verificationTaskService;
   @Inject private Map<DataSourceType, CVConfigUpdatableEntity> dataSourceTypeCVConfigMapBinder;
+  @Inject private SideKickService sideKickService;
 
   @Override
   public CVConfig save(CVConfig cvConfig) {
@@ -95,8 +100,13 @@ public class CVConfigServiceImpl implements CVConfigService {
     if (cvConfig == null) {
       return;
     }
-    deletedCVConfigService.save(
-        DeletedCVConfig.builder().cvConfig(cvConfig).accountId(cvConfig.getAccountId()).build(), Duration.ofHours(2));
+    DeletedCVConfig deletedCVConfig =
+        DeletedCVConfig.builder().cvConfig(cvConfig).accountId(cvConfig.getAccountId()).build();
+    deletedCVConfigService.save(deletedCVConfig, Duration.ofHours(2));
+    CompletableFuture.runAsync(
+        ()
+            -> sideKickService.schedule(
+                CVConfigCleanupSideKickData.builder().deletedCVConfig(deletedCVConfig).build(), Instant.now()));
     hPersistence.delete(CVConfig.class, cvConfigId);
   }
 
