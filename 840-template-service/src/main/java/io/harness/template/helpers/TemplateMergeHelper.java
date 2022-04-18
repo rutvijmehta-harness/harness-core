@@ -425,29 +425,34 @@ public class TemplateMergeHelper {
       log.error("Could not convert yaml to JsonNode. Yaml:\n" + yaml, e);
       throw new NGTemplateException("Could not convert yaml to JsonNode: " + e.getMessage());
     }
-    return refreshTemplateInYaml(accountId, orgId, projectId, yamlNode);
+    Map<String, TemplateEntity> templateCacheMap = new HashMap<>();
+    return refreshTemplateInYaml(accountId, orgId, projectId, yamlNode, templateCacheMap);
   }
 
-  private String refreshTemplateInYaml(String accountId, String orgId, String projectId, YamlNode yamlNode) {
+  private String refreshTemplateInYaml(String accountId, String orgId, String projectId, YamlNode yamlNode,
+      Map<String, TemplateEntity> templateCacheMap) {
     for (YamlField childYamlField : yamlNode.fields()) {
       String fieldName = childYamlField.getName();
       JsonNode value = childYamlField.getNode().getCurrJsonNode();
       if (isTemplatePresent(fieldName, value)) {
-        function(value);
+        function(accountId, orgId, projectId, value, templateCacheMap);
         continue;
-      }
-      if (value.isValueNode() || YamlUtils.checkIfNodeIsArrayWithPrimitiveTypes(value)) {
-      } else if (value.isArray()) {
-      } else {
       }
     }
     return null;
   }
 
-  private void function(JsonNode value) {
+  private void function(
+      String accountId, String orgId, String projectId, JsonNode value, Map<String, TemplateEntity> templateCacheMap) {
     JsonNode templateReference = value.get(TEMPLATE_REF);
     JsonNode versionLabel = value.get(TEMPLATE_VERSION_LABEL);
     JsonNode templateInputs = value.get(TEMPLATE_INPUTS);
+
+    String templateIdentifier = templateReference.asText();
+
+    String templateInputsFromTemplatesYaml =
+        getTemplateInputs(accountId, orgId, projectId, templateIdentifier, versionLabel.asText());
+    String templateInputsFromPipelineYaml = templateInputs.asText();
   }
 
   private Object validateTemplateInputsInArray(String accountId, String orgId, String projectId, YamlNode yamlNode,
