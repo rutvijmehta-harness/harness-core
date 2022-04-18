@@ -15,6 +15,7 @@ import static io.harness.connector.ConnectorTestConstants.ORG_IDENTIFIER;
 import static io.harness.connector.ConnectorTestConstants.PROJECT_IDENTIFIER;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.doReturn;
 
 import io.harness.CategoryTest;
@@ -23,6 +24,7 @@ import io.harness.connector.ConnectivityStatus;
 import io.harness.connector.ConnectorValidationResult;
 import io.harness.delegate.beans.connector.pdcconnector.HostDTO;
 import io.harness.delegate.beans.connector.pdcconnector.PhysicalDataCenterConnectorDTO;
+import io.harness.exception.HintException;
 import io.harness.ng.core.dto.ErrorDetail;
 import io.harness.ng.validator.dto.HostValidationDTO;
 import io.harness.ng.validator.service.api.NGHostValidationService;
@@ -85,18 +87,12 @@ public class PhysicalDataCenterConnectorValidatorTest extends CategoryTest {
         .validateHostsConnectivity(Collections.singletonList(HOST_NAME), ACCOUNT_IDENTIFIER, ORG_IDENTIFIER,
             PROJECT_IDENTIFIER, Sets.newHashSet(DELEGATE_SELECTOR));
 
-    ConnectorValidationResult validationResult =
-        physicalDataCenterConnectorValidator.validate(getPhysicalDataCenterConnectorDTO(), ACCOUNT_IDENTIFIER,
-            ORG_IDENTIFIER, PROJECT_IDENTIFIER, CONNECTOR_IDENTIFIER);
-
-    assertThat(validationResult).isNotNull();
-    assertThat(validationResult).isInstanceOf(ConnectorValidationResult.class);
-    assertThat(validationResult.getErrors().get(0)).isNotNull();
-    assertThat(validationResult.getErrors().get(0)).isInstanceOf(ErrorDetail.class);
-    ErrorDetail errorDetail = validationResult.getErrors().get(0);
-    assertThat(errorDetail.getMessage()).isEqualTo(errorMsg);
-    assertThat(errorDetail.getReason()).isEqualTo(errorReason);
-    assertThat(validationResult.getStatus()).isEqualTo(ConnectivityStatus.FAILURE);
+    assertThatThrownBy(()
+                           -> physicalDataCenterConnectorValidator.validate(getPhysicalDataCenterConnectorDTO(),
+                               ACCOUNT_IDENTIFIER, ORG_IDENTIFIER, PROJECT_IDENTIFIER, CONNECTOR_IDENTIFIER))
+        .isInstanceOf(HintException.class)
+        .hasMessage(
+            "Please ensure if port is opened on host. Check firewall rules between the delegate and host. Try to test connectivity by telnet");
   }
 
   private PhysicalDataCenterConnectorDTO getPhysicalDataCenterConnectorDTO() {

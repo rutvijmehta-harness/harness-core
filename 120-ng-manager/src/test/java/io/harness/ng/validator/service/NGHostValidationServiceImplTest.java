@@ -28,6 +28,8 @@ import io.harness.delegate.beans.connector.pdcconnector.HostConnectivityTaskResp
 import io.harness.delegate.beans.secrets.SSHConfigValidationTaskResponse;
 import io.harness.delegate.utils.TaskSetupAbstractionHelper;
 import io.harness.eraro.ErrorCode;
+import io.harness.errorhandling.NGErrorHelper;
+import io.harness.exception.HintException;
 import io.harness.exception.InvalidArgumentsException;
 import io.harness.ng.core.api.NGSecretServiceV2;
 import io.harness.ng.core.dto.ErrorDetail;
@@ -73,6 +75,7 @@ public class NGHostValidationServiceImplTest extends CategoryTest {
   @Mock private SshKeySpecDTOHelper sshKeySpecDTOHelper;
   @Mock private TaskSetupAbstractionHelper taskSetupAbstractionHelper;
   @Mock private DelegateGrpcClientWrapper delegateGrpcClientWrapper;
+  @Mock private NGErrorHelper ngErrorHelper;
   @InjectMocks NGHostValidationServiceImpl hostValidationService;
 
   @Test
@@ -101,6 +104,8 @@ public class NGHostValidationServiceImplTest extends CategoryTest {
     mockEncryptionDetails();
     mockTaskAbstractions();
 
+    when(ngErrorHelper.getReason(VALIDATION_HOST_FAILED_ERROR_MSG)).thenReturn(VALIDATION_HOST_FAILED_ERROR_MSG);
+    when(ngErrorHelper.getCode(VALIDATION_HOST_FAILED_ERROR_MSG)).thenReturn(450);
     when(delegateGrpcClientWrapper.executeSyncTask(any())).thenReturn(buildSSHConfigValidationTaskResponseFailed());
 
     HostValidationDTO result = hostValidationService.validateSSHHost(
@@ -110,8 +115,9 @@ public class NGHostValidationServiceImplTest extends CategoryTest {
     assertThat(result.getStatus()).isEqualTo(HostValidationDTO.HostValidationStatus.FAILED);
     assertThat(result.getError())
         .isEqualTo(ErrorDetail.builder()
-                       .reason("Validation failed for host: host")
+                       .reason("SSH Validation host failed")
                        .message(VALIDATION_HOST_FAILED_ERROR_MSG)
+                       .code(450)
                        .build());
   }
 
@@ -230,6 +236,8 @@ public class NGHostValidationServiceImplTest extends CategoryTest {
   public void testValidateHostConnectivityWithFailedResponse() {
     mockTaskAbstractions();
 
+    when(ngErrorHelper.getReason(VALIDATION_HOST_FAILED_ERROR_MSG)).thenReturn(VALIDATION_HOST_FAILED_ERROR_MSG);
+    when(ngErrorHelper.getCode(VALIDATION_HOST_FAILED_ERROR_MSG)).thenReturn(450);
     when(delegateGrpcClientWrapper.executeSyncTask(any())).thenReturn(buildHostConnectivityTaskResponseFailed());
 
     HostValidationDTO result = hostValidationService.validateHostConnectivity(
@@ -239,8 +247,9 @@ public class NGHostValidationServiceImplTest extends CategoryTest {
     assertThat(result.getStatus()).isEqualTo(HostValidationDTO.HostValidationStatus.FAILED);
     assertThat(result.getError())
         .isEqualTo(ErrorDetail.builder()
-                       .reason("Validation failed for host: host")
+                       .reason("SSH Validation host failed")
                        .message(VALIDATION_HOST_FAILED_ERROR_MSG)
+                       .code(450)
                        .build());
   }
 
@@ -252,16 +261,12 @@ public class NGHostValidationServiceImplTest extends CategoryTest {
 
     when(delegateGrpcClientWrapper.executeSyncTask(any())).thenReturn(buildErrorNotifyResponseData());
 
-    HostValidationDTO result = hostValidationService.validateHostConnectivity(
-        HOST, ACCOUNT_IDENTIFIER, ORG_IDENTIFIER, PROJECT_IDENTIFIER, Sets.newHashSet(DELEGATE_SELECTOR));
-
-    assertThat(result.getHost()).isEqualTo(HOST);
-    assertThat(result.getStatus()).isEqualTo(HostValidationDTO.HostValidationStatus.FAILED);
-    assertThat(result.getError())
-        .isEqualTo(ErrorDetail.builder()
-                       .reason("Validation failed for host: host")
-                       .message(VALIDATION_HOST_FAILED_ERROR_MSG)
-                       .build());
+    assertThatThrownBy(()
+                           -> hostValidationService.validateHostConnectivity(HOST, ACCOUNT_IDENTIFIER, ORG_IDENTIFIER,
+                               PROJECT_IDENTIFIER, Sets.newHashSet(DELEGATE_SELECTOR)))
+        .isInstanceOf(HintException.class)
+        .hasMessage(
+            "Please make sure that your delegates are connected. Refer https://docs.harness.io/article/migeq3achl-harness-delegate-faqs#delegate_installation for more information on delegate Installation");
   }
 
   @Test

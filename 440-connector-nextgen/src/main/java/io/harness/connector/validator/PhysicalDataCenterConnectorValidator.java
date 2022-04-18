@@ -15,6 +15,7 @@ import io.harness.annotations.dev.OwnedBy;
 import io.harness.connector.ConnectivityStatus;
 import io.harness.connector.ConnectorResponseDTO;
 import io.harness.connector.ConnectorValidationResult;
+import io.harness.data.structure.EmptyPredicate;
 import io.harness.delegate.beans.connector.pdcconnector.HostDTO;
 import io.harness.delegate.beans.connector.pdcconnector.PhysicalDataCenterConnectorDTO;
 import io.harness.exception.ExplanationException;
@@ -73,9 +74,15 @@ public class PhysicalDataCenterConnectorValidator implements ConnectionValidator
   }
 
   private ConnectorValidationResult buildConnectorValidationResultFailure(List<HostValidationDTO> hostValidationDTOS) {
-    String detailedErrorMsg = format(
-        "Socket connectivity checks failed for host(s) %n %s %n%n Socket connectivity checks passed for host(s) %n %s",
-        getFailedHostsList(hostValidationDTOS), getPassedHostList(hostValidationDTOS));
+    String detailedErrorMsg =
+        format("Socket connectivity checks failed for host(s) %n%s", getFailedHostsList(hostValidationDTOS));
+
+    String passedHostList = getPassedHostList(hostValidationDTOS);
+    if (EmptyPredicate.isNotEmpty(passedHostList)) {
+      detailedErrorMsg =
+          format("%s%n%n Socket connectivity checks passed for host(s) %n%s", detailedErrorMsg, passedHostList);
+    }
+
     throw NestedExceptionUtils.hintWithExplanationException(HintException.HINT_SOCKET_CONNECTION_TO_HOST_UNREACHABLE,
         ExplanationException.DELEGATE_TO_HOST_SOCKET_CONNECTION_FAILED,
         new InvalidRequestException(detailedErrorMsg, WingsException.USER));
@@ -87,7 +94,7 @@ public class PhysicalDataCenterConnectorValidator implements ConnectionValidator
         .map(hostValidationDTO
             -> format(
                 "[host]: %s, [message]: %s", hostValidationDTO.getHost(), hostValidationDTO.getError().getMessage()))
-        .collect(Collectors.joining("/n"));
+        .collect(Collectors.joining("\n"));
   }
 
   private String getPassedHostList(@NotNull List<HostValidationDTO> hostValidationDTOS) {
@@ -95,7 +102,7 @@ public class PhysicalDataCenterConnectorValidator implements ConnectionValidator
                                                  .filter(isHostValidationStatusSuccess())
                                                  .map(HostValidationDTO::getHost)
                                                  .collect(Collectors.toList());
-    return StringUtils.join(validationPassedHostNames, ',');
+    return StringUtils.join(validationPassedHostNames, '\n');
   }
 
   @NotNull
