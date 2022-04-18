@@ -21,6 +21,7 @@ import static javax.ws.rs.core.MediaType.APPLICATION_OCTET_STREAM;
 import static javax.ws.rs.core.MediaType.MULTIPART_FORM_DATA;
 
 import io.harness.NGCommonEntityConstants;
+import io.harness.NGResourceFilterConstants;
 import io.harness.annotations.dev.OwnedBy;
 import io.harness.data.validator.EntityIdentifier;
 import io.harness.ng.core.api.FileStoreService;
@@ -29,6 +30,7 @@ import io.harness.ng.core.dto.ErrorDTO;
 import io.harness.ng.core.dto.FailureDTO;
 import io.harness.ng.core.dto.ResponseDTO;
 import io.harness.ng.core.dto.filestore.FileDTO;
+import io.harness.ng.core.dto.filestore.filter.FilesFilterPropertiesDTO;
 import io.harness.ng.core.dto.filestore.node.FolderNodeDTO;
 import io.harness.security.annotations.NextGenManagerAuth;
 import io.harness.serializer.JsonUtils;
@@ -48,6 +50,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import java.io.File;
 import java.io.InputStream;
 import java.util.List;
+import java.util.Set;
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
 import javax.ws.rs.BeanParam;
@@ -212,5 +215,46 @@ public class FileStoreResource {
       @NotNull FolderNodeDTO folderNodeDTO) {
     return ResponseDTO.newResponse(
         fileStoreService.listFolderNodes(accountIdentifier, orgIdentifier, projectIdentifier, folderNodeDTO));
+  }
+
+  @POST
+  @Consumes({"application/json"})
+  @Path("filter")
+  @ApiOperation(value = "Gets the filtered list of files", nickname = "listFilesWithFilter")
+  @Operation(operationId = "listFilesWithFilter", summary = "Get filtered list of files.",
+      responses =
+      { @io.swagger.v3.oas.annotations.responses.ApiResponse(description = "Returns filtered list of files.") })
+  public ResponseDTO<List<FileDTO>>
+  listFilesWithFilter(@Parameter(description = ACCOUNT_PARAM_MESSAGE) @QueryParam(
+                          ACCOUNT_KEY) @EntityIdentifier String accountIdentifier,
+      @Parameter(description = ORG_PARAM_MESSAGE) @QueryParam(ORG_KEY) @EntityIdentifier(
+          allowBlank = true) String orgIdentifier,
+      @Parameter(description = PROJECT_PARAM_MESSAGE) @QueryParam(PROJECT_KEY) @EntityIdentifier(allowBlank = true)
+      String projectIdentifier, @QueryParam(NGResourceFilterConstants.FILTER_KEY) String filterIdentifier,
+      @QueryParam(NGResourceFilterConstants.SEARCH_TERM_KEY) String searchTerm,
+      @RequestBody(description = "Details of the File filter properties to be applied")
+      FilesFilterPropertiesDTO filesFilterPropertiesDTO) {
+    return ResponseDTO.newResponse(fileStoreService.listFilesWithFilter(
+        accountIdentifier, orgIdentifier, projectIdentifier, filterIdentifier, searchTerm, filesFilterPropertiesDTO));
+  }
+
+  @GET
+  @Consumes({"application/json"})
+  @Path("createdBy")
+  @ApiOperation(value = "Get list of created by usernames", nickname = "getCreatedByList")
+  @Operation(operationId = "getCreatedByList", summary = "Get list of created by usernames.",
+      responses =
+      {
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(description = "Returns the list of created by usernames")
+      })
+  public ResponseDTO<Set<String>>
+  getCreatedByList(@Parameter(description = ACCOUNT_PARAM_MESSAGE) @QueryParam(
+                       ACCOUNT_KEY) @EntityIdentifier String accountIdentifier,
+      @Parameter(description = ORG_PARAM_MESSAGE) @QueryParam(ORG_KEY) @EntityIdentifier(
+          allowBlank = true) String orgIdentifier,
+      @Parameter(description = PROJECT_PARAM_MESSAGE) @QueryParam(PROJECT_KEY) @EntityIdentifier(
+          allowBlank = true) String projectIdentifier) {
+    return ResponseDTO.newResponse(
+        fileStoreService.getCreatedByList(accountIdentifier, orgIdentifier, projectIdentifier));
   }
 }

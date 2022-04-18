@@ -46,6 +46,7 @@ public class FileDTOMapper {
         .description(fileDto.getDescription())
         .tags(!EmptyPredicate.isEmpty(fileDto.getTags()) ? fileDto.getTags() : Collections.emptyList())
         .mimeType(fileDto.getMimeType())
+        .createdBy(fileDto.getCreatedBy())
         .build();
   }
 
@@ -74,6 +75,7 @@ public class FileDTOMapper {
         .description(ngFile.getDescription())
         .tags(ngFile.getTags())
         .mimeType(ngFile.getMimeType())
+        .createdBy(ngFile.getCreatedBy())
         .build();
   }
 
@@ -92,6 +94,7 @@ public class FileDTOMapper {
     file.setTags(!EmptyPredicate.isEmpty(fileDto.getTags()) ? fileDto.getTags() : Collections.emptyList());
     file.setName(fileDto.getName());
     file.setMimeType(fileDto.getMimeType());
+    file.setCreatedBy(fileDto.getCreatedBy());
     return file;
   }
 

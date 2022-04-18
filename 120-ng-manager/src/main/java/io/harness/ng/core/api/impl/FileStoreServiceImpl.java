@@ -9,7 +9,14 @@ package io.harness.ng.core.api.impl;
 
 import static io.harness.annotations.dev.HarnessTeam.CDP;
 import static io.harness.data.structure.EmptyPredicate.isEmpty;
+import static io.harness.data.structure.EmptyPredicate.isNotEmpty;
 import static io.harness.delegate.beans.FileBucket.FILE_STORE;
+import static io.harness.filter.FilterType.FILESTORE;
+import static io.harness.ng.core.entities.NGFile.NGFiles;
+import static io.harness.repositories.filestore.FileStoreRepositoryCriteriaCreator.createFilesFilterCriteria;
+import static io.harness.repositories.filestore.FileStoreRepositoryCriteriaCreator.createScopeCriteria;
+import static io.harness.repositories.filestore.FileStoreRepositoryCriteriaCreator.createSortByLastModifiedAtDesc;
+import static io.harness.repositories.filestore.FileStoreRepositoryCriteriaCreator.createSortByName;
 
 import static java.lang.String.format;
 
@@ -17,11 +24,15 @@ import io.harness.annotations.dev.OwnedBy;
 import io.harness.beans.Scope;
 import io.harness.exception.DuplicateEntityException;
 import io.harness.exception.InvalidArgumentsException;
+import io.harness.exception.InvalidRequestException;
 import io.harness.file.beans.NGBaseFile;
 import io.harness.filestore.FileStoreConstants;
 import io.harness.filestore.NGFileType;
+import io.harness.filter.dto.FilterDTO;
+import io.harness.filter.service.FilterService;
 import io.harness.ng.core.api.FileStoreService;
 import io.harness.ng.core.dto.filestore.FileDTO;
+import io.harness.ng.core.dto.filestore.filter.FilesFilterPropertiesDTO;
 import io.harness.ng.core.dto.filestore.node.FileStoreNodeDTO;
 import io.harness.ng.core.dto.filestore.node.FolderNodeDTO;
 import io.harness.ng.core.entities.NGFile;
@@ -41,10 +52,13 @@ import java.io.File;
 import java.io.InputStream;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 import javax.validation.constraints.NotNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DuplicateKeyException;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.mongodb.core.query.Criteria;
 
 @Singleton
 @OwnedBy(CDP)
@@ -53,13 +67,15 @@ public class FileStoreServiceImpl implements FileStoreService {
   private final FileService fileService;
   private final FileStoreRepository fileStoreRepository;
   private final MainConfiguration configuration;
+  private final FilterService filterService;
 
   @Inject
-  public FileStoreServiceImpl(
-      FileService fileService, FileStoreRepository fileStoreRepository, MainConfiguration configuration) {
+  public FileStoreServiceImpl(FileService fileService, FileStoreRepository fileStoreRepository,
+      MainConfiguration configuration, FilterService filterService) {
     this.fileService = fileService;
     this.fileStoreRepository = fileStoreRepository;
     this.configuration = configuration;
+    this.filterService = filterService;
   }
 
   @Override
@@ -152,6 +168,41 @@ public class FileStoreServiceImpl implements FileStoreService {
     return populateFolderNode(folderNodeDTO, accountIdentifier, orgIdentifier, projectIdentifier);
   }
 
+  @Override
+  public List<FileDTO> listFilesWithFilter(String accountIdentifier, String orgIdentifier, String projectIdentifier,
+      String filterIdentifier, String searchTerm, FilesFilterPropertiesDTO filterProperties) {
+    if (isNotEmpty(filterIdentifier) && filterProperties != null) {
+      throw new InvalidRequestException("Can not apply both filter properties and saved filter together");
+    }
+
+    if (isNotEmpty(filterIdentifier)) {
+      FilterDTO filterDTO =
+          filterService.get(accountIdentifier, orgIdentifier, projectIdentifier, filterIdentifier, FILESTORE);
+      filterProperties = (FilesFilterPropertiesDTO) filterDTO.getFilterProperties();
+    }
+
+    Scope scope = Scope.of(accountIdentifier, orgIdentifier, projectIdentifier);
+    Criteria criteria = createFilesFilterCriteria(scope, filterProperties, searchTerm);
+
+    return fileStoreRepository.findAllAndSort(criteria, createSortByLastModifiedAtDesc())
+        .stream()
+        .map(FileDTOMapper::getFileDTOFromNGFile)
+        .collect(Collectors.toList());
+  }
+
+  @Override
+  public Set<String> getCreatedByList(String accountIdentifier, String orgIdentifier, String projectIdentifier) {
+    Scope scope = Scope.of(accountIdentifier, orgIdentifier, projectIdentifier);
+    Criteria criteria = createScopeCriteria(scope);
+    criteria.and(NGFiles.type).is(NGFileType.FILE);
+
+    return fileStoreRepository.findAllAndSort(criteria, createSortByName(Sort.Direction.ASC))
+        .stream()
+        .filter(Objects::nonNull)
+        .collect(Collectors.groupingBy(NGFile::getCreatedBy))
+        .keySet();
+  }
+
   private boolean existInDatabase(FileDTO fileDto) {
     return fileStoreRepository
         .findByAccountIdentifierAndOrgIdentifierAndProjectIdentifierAndIdentifier(fileDto.getAccountIdentifier(),
@@ -216,7 +267,7 @@ public class FileStoreServiceImpl implements FileStoreService {
     return fileStoreRepository.findAllAndSort(
         FileStoreRepositoryCriteriaCreator.createCriteriaByScopeAndParentIdentifier(
             Scope.of(accountIdentifier, orgIdentifier, projectIdentifier), parentIdentifier),
-        FileStoreRepositoryCriteriaCreator.createSortByLastModifiedAtDesc());
+        createSortByLastModifiedAtDesc());
   }
 
   private void validateIsReferencedBy(NGFile fileOrFolder) {

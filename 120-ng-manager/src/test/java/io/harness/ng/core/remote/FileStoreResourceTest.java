@@ -7,11 +7,13 @@
 
 package io.harness.ng.core.remote;
 
+import static io.harness.rule.OwnerRule.BOJAN;
 import static io.harness.rule.OwnerRule.IVAN;
 import static io.harness.rule.OwnerRule.VLAD;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -22,11 +24,18 @@ import io.harness.category.element.UnitTests;
 import io.harness.exception.InvalidRequestException;
 import io.harness.ng.core.api.impl.FileStoreServiceImpl;
 import io.harness.ng.core.dto.ResponseDTO;
+import io.harness.ng.core.dto.filestore.FileDTO;
+import io.harness.ng.core.dto.filestore.filter.FilesFilterPropertiesDTO;
 import io.harness.ng.core.dto.filestore.node.FolderNodeDTO;
 import io.harness.rule.Owner;
 
+import com.google.api.client.util.Lists;
 import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
 import javax.ws.rs.core.Response;
+import jersey.repackaged.com.google.common.collect.Sets;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -111,5 +120,50 @@ public class FileStoreResourceTest extends CategoryTest {
     assertThatThrownBy(() -> fileStoreResource.listFolderNodes(ACCOUNT, ORG, PROJECT, folderDTO))
         .isInstanceOf(InvalidRequestException.class)
         .hasMessage("Unable to list folder nodes");
+  }
+
+  @Test
+  @Owner(developers = BOJAN)
+  @Category(UnitTests.class)
+  public void testListFilesWithFilter() {
+    ArrayList<FileDTO> fileDTOS = Lists.newArrayList();
+    fileDTOS.add(FileDTO.builder().name("file1").build());
+    when(fileStoreService.listFilesWithFilter(any(), any(), any(), any(), any(), any())).thenReturn(fileDTOS);
+
+    ResponseDTO<List<FileDTO>> response = fileStoreResource.listFilesWithFilter(ACCOUNT, ORG, PROJECT, "", "", null);
+    List<FileDTO> returnedList = response.getData();
+
+    assertThat(returnedList).isNotNull();
+    assertThat(returnedList.isEmpty()).isFalse();
+    assertThat(returnedList.get(0).getName()).isEqualTo("file1");
+  }
+
+  @Test
+  @Owner(developers = BOJAN)
+  @Category(UnitTests.class)
+  public void testListFilesWithFilterException() {
+    when(fileStoreService.listFilesWithFilter(any(), any(), any(), any(), any(), any()))
+        .thenThrow(new InvalidRequestException("Can not apply both filter properties and saved filter together"));
+
+    assertThatThrownBy(()
+                           -> fileStoreResource.listFilesWithFilter(
+                               ACCOUNT, ORG, PROJECT, "filterIdentifier", "", new FilesFilterPropertiesDTO()))
+        .isInstanceOf(InvalidRequestException.class)
+        .hasMessage("Can not apply both filter properties and saved filter together");
+  }
+
+  @Test
+  @Owner(developers = BOJAN)
+  @Category(UnitTests.class)
+  public void testListCreatedByUserNames() {
+    when(fileStoreService.getCreatedByList(any(), any(), any()))
+        .thenReturn(Sets.newHashSet("test@test.com", "test1@test.com"));
+
+    ResponseDTO<Set<String>> response = fileStoreResource.getCreatedByList(ACCOUNT, ORG, PROJECT);
+    Set<String> returnedList = response.getData();
+
+    assertThat(returnedList).isNotNull();
+    assertThat(returnedList.isEmpty()).isFalse();
+    assertThat(returnedList.size()).isEqualTo(2);
   }
 }

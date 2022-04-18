@@ -61,6 +61,7 @@ public class FileDTO {
   @Schema(description = "Description of the File") @FormDataParam("description") private String description;
   @Schema(description = "Tags") @Valid private List<NGTag> tags;
   @Schema(description = "Mime type of the File") @FormDataParam("mimeType") private String mimeType;
+  @NotBlank @Schema(description = "File created by user") @FormDataParam("createdBy") private String createdBy;
 
   @JsonIgnore
   public boolean isFile() {
