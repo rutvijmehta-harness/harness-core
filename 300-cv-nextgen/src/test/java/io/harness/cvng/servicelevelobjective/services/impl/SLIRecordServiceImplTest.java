@@ -12,7 +12,9 @@ import static io.harness.cvng.servicelevelobjective.entities.SLIRecord.SLIState.
 import static io.harness.cvng.servicelevelobjective.entities.SLIRecord.SLIState.NO_DATA;
 import static io.harness.data.structure.UUIDGenerator.generateUuid;
 import static io.harness.persistence.HQuery.excludeAuthority;
-import static io.harness.rule.OwnerRule.*;
+import static io.harness.rule.OwnerRule.ARPITJ;
+import static io.harness.rule.OwnerRule.DEEPAK_CHHIKARA;
+import static io.harness.rule.OwnerRule.KAMAL;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.data.Offset.offset;
@@ -418,9 +420,9 @@ public class SLIRecordServiceImplTest extends CvNextGenTestBase {
             sliMissingDataType, 0, customStartTime, customEndTime);
     Duration duration = Duration.between(customStartTime, customEndTime);
     if (customMinutesEnd == 0) {
-      assertThat(sloGraphData.getSloPerformanceTrend()).hasSize(((int) duration.toMinutes()) - 1);
+      assertThat(sloGraphData.getSloPerformanceTrend()).hasSize((int) duration.toMinutes() - 1);
     } else {
-      assertThat(sloGraphData.getSloPerformanceTrend()).hasSize(((int) duration.toMinutes()));
+      assertThat(sloGraphData.getSloPerformanceTrend()).hasSize((int) duration.toMinutes());
     }
     List<Point> sloPerformanceTrend = sloGraphData.getSloPerformanceTrend();
     List<Point> errorBudgetBurndown = sloGraphData.getErrorBudgetBurndown();
