@@ -22,10 +22,9 @@ public class GcpAccessTokenSupplier implements Supplier<String> {
   private final GoogleCredential googleCredential;
 
   public GcpAccessTokenSupplier(String serviceAccountJsonKey, Function<String, GoogleCredential> jsonKeyToCredential,
-                                DataStore<StoredCredential> cache, Clock clock) {
+      DataStore<StoredCredential> cache, Clock clock) {
     this.serviceAccountJsonKey = serviceAccountJsonKey;
-    this.googleCredential =
-        copyAndAddRefreshListener(jsonKeyToCredential.apply(serviceAccountJsonKey), clock, cache);
+    this.googleCredential = copyAndAddRefreshListener(jsonKeyToCredential.apply(serviceAccountJsonKey), clock, cache);
     this.cache = cache;
     this.clock = clock;
   }
@@ -57,7 +56,6 @@ public class GcpAccessTokenSupplier implements Supplier<String> {
 
   private GoogleCredential copyAndAddRefreshListener(
       GoogleCredential googleCredential, Clock clock, DataStore<StoredCredential> cache) {
-
     return new GoogleCredential.Builder()
         .setJsonFactory(googleCredential.getJsonFactory())
         .setTransport(googleCredential.getTransport())

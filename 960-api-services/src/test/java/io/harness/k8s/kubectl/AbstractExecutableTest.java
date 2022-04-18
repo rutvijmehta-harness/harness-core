@@ -1,6 +1,5 @@
 package io.harness.k8s.kubectl;
 
-
 import static io.harness.rule.OwnerRule.BOGDAN;
 
 import static org.apache.commons.io.output.NullOutputStream.NULL_OUTPUT_STREAM;
@@ -31,7 +30,6 @@ import org.powermock.modules.junit4.PowerMockRunner;
 @PrepareForTest({Utils.class})
 @OwnedBy(HarnessTeam.CDP)
 public class AbstractExecutableTest {
-
   @Test
   @Owner(developers = BOGDAN)
   @Category(UnitTests.class)
@@ -69,7 +67,8 @@ public class AbstractExecutableTest {
   private Map<String, String> captureEnvironment() throws Exception {
     ArgumentCaptor<Map> mapArgumentCaptor = ArgumentCaptor.forClass(Map.class);
     PowerMockito.verifyStatic(Utils.class, Mockito.times(1));
-    Utils.executeScript(anyString(), anyString(), any(OutputStream.class), any(OutputStream.class), mapArgumentCaptor.capture());
+    Utils.executeScript(
+        anyString(), anyString(), any(OutputStream.class), any(OutputStream.class), mapArgumentCaptor.capture());
     return (Map<String, String>) mapArgumentCaptor.getValue();
   }
 
@@ -81,5 +80,4 @@ public class AbstractExecutableTest {
       }
     };
   }
-
 }

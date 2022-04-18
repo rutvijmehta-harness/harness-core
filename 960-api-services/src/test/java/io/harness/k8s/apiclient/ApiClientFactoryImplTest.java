@@ -213,9 +213,9 @@ public class ApiClientFactoryImplTest extends CategoryTest {
 
       // then
       assertThat(mockWebServer.takeRequest(1L, TimeUnit.SECONDS).getHeader("Authorization"))
-        .isEqualTo("Bearer " + firstToken);
+          .isEqualTo("Bearer " + firstToken);
       assertThat(mockWebServer.takeRequest(1L, TimeUnit.SECONDS).getHeader("Authorization"))
-        .isEqualTo("Bearer " + secondToken);
+          .isEqualTo("Bearer " + secondToken);
     }
   }
 

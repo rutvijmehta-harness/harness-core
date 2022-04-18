@@ -146,31 +146,29 @@ public class GkeClusterHelperTest extends CategoryTest {
                   .setAutoscaling(new NodePoolAutoscaling().setEnabled(true).setMinNodeCount(5).setMaxNodeCount(10))));
 
   private static final Cluster CLUSTER_1_19 =
-    new Cluster()
-      .setName("cluster-name-2")
-      .setZone("zone-b")
-      .setInitialNodeCount(5)
-      .setStatus("RUNNING")
-      .setEndpoint("1.1.1.2")
-      .setCurrentMasterVersion("1.19.0")
-      .setMasterAuth(new MasterAuth())
-      .setNodePools(ImmutableList.of(
-        new NodePool()
-          .setName("node-pool2")
-          .setAutoscaling(new NodePoolAutoscaling().setEnabled(true).setMinNodeCount(5).setMaxNodeCount(10))));
-
+      new Cluster()
+          .setName("cluster-name-2")
+          .setZone("zone-b")
+          .setInitialNodeCount(5)
+          .setStatus("RUNNING")
+          .setEndpoint("1.1.1.2")
+          .setCurrentMasterVersion("1.19.0")
+          .setMasterAuth(new MasterAuth())
+          .setNodePools(ImmutableList.of(
+              new NodePool()
+                  .setName("node-pool2")
+                  .setAutoscaling(new NodePoolAutoscaling().setEnabled(true).setMinNodeCount(5).setMaxNodeCount(10))));
 
   @Before
   public void setUp() throws Exception {
     MockitoAnnotations.initMocks(this);
-    when(gcpHelperService.getGkeContainerService(eq(DUMMY_GCP_KEY_CHARS), anyBoolean()))
-        .thenReturn(container);
+    when(gcpHelperService.getGkeContainerService(eq(DUMMY_GCP_KEY_CHARS), anyBoolean())).thenReturn(container);
     when(gcpHelperService.getSleepIntervalSecs()).thenReturn(0);
     when(gcpHelperService.getTimeoutMins()).thenReturn(1);
     when(gcpHelperService.getClusterProjectId(any())).thenReturn("project-a");
     when(gcpHelperService.getGoogleCredential(any(), anyBoolean()))
-        .thenReturn(GoogleCredential.fromStream(
-            new ByteArrayInputStream(DUMMY_GCP_KEY.getBytes(StandardCharsets.UTF_8))));
+        .thenReturn(
+            GoogleCredential.fromStream(new ByteArrayInputStream(DUMMY_GCP_KEY.getBytes(StandardCharsets.UTF_8))));
     when(container.projects()).thenReturn(projects);
     when(projects.locations()).thenReturn(locations);
     when(locations.clusters()).thenReturn(clusters);
@@ -207,8 +205,8 @@ public class GkeClusterHelperTest extends CategoryTest {
     Operation doneOperation = new Operation().setStatus("DONE");
     when(operationsGet.execute()).thenReturn(doneOperation);
 
-    KubernetesConfig config = gkeClusterHelper.createCluster(
-      DUMMY_GCP_KEY_CHARS, false, ZONE_CLUSTER, "default", CREATE_CLUSTER_PARAMS);
+    KubernetesConfig config =
+        gkeClusterHelper.createCluster(DUMMY_GCP_KEY_CHARS, false, ZONE_CLUSTER, "default", CREATE_CLUSTER_PARAMS);
 
     verify(clusters).create(anyString(), any(CreateClusterRequest.class));
     assertThat(config.getMasterUrl()).isEqualTo("https://1.1.1.1/");
@@ -266,8 +264,7 @@ public class GkeClusterHelperTest extends CategoryTest {
   public void shouldGetCluster() throws Exception {
     when(clustersGet.execute()).thenReturn(CLUSTER_1);
 
-    KubernetesConfig config =
-        gkeClusterHelper.getCluster(DUMMY_GCP_KEY.toCharArray(), false, ZONE_CLUSTER, "default");
+    KubernetesConfig config = gkeClusterHelper.getCluster(DUMMY_GCP_KEY.toCharArray(), false, ZONE_CLUSTER, "default");
 
     verify(clusters).get(anyString());
     assertThat(config.getMasterUrl()).isEqualTo("https://1.1.1.1/");
@@ -285,26 +282,25 @@ public class GkeClusterHelperTest extends CategoryTest {
     when(clock.instant()).thenReturn(now);
 
     String accessToken = "access_token";
-    StoredCredential storedCredential = new StoredCredential()
-      .setAccessToken(accessToken)
-      .setExpirationTimeMilliseconds(now.plus(Duration.ofMinutes(30)).toEpochMilli());
+    StoredCredential storedCredential =
+        new StoredCredential()
+            .setAccessToken(accessToken)
+            .setExpirationTimeMilliseconds(now.plus(Duration.ofMinutes(30)).toEpochMilli());
 
     when(clustersGet.execute()).thenReturn(CLUSTER_1_19);
     when(dataStore.get(eq("mock-account-id@mock-project.iam.gserviceaccount.com"))).thenReturn(storedCredential);
 
-    GoogleCredential creds
-      = GoogleCredential.fromStream(new ByteArrayInputStream(DUMMY_GCP_KEY.getBytes(StandardCharsets.UTF_8)));
+    GoogleCredential creds =
+        GoogleCredential.fromStream(new ByteArrayInputStream(DUMMY_GCP_KEY.getBytes(StandardCharsets.UTF_8)));
     when(gcpHelperService.getGoogleCredential(eq(DUMMY_GCP_KEY_CHARS), eq(false))).thenReturn(creds);
 
     // when
-    KubernetesConfig config =
-      gkeClusterHelper.getCluster(DUMMY_GCP_KEY.toCharArray(), false, ZONE_CLUSTER, "default");
+    KubernetesConfig config = gkeClusterHelper.getCluster(DUMMY_GCP_KEY.toCharArray(), false, ZONE_CLUSTER, "default");
 
     // then
     verify(clusters).get(anyString());
     assertThat(config.getServiceAccountTokenSupplier().get()).isEqualTo(accessToken);
   }
-
 
   @Test
   @Owner(developers = ACASIAN)
@@ -424,5 +420,4 @@ public class GkeClusterHelperTest extends CategoryTest {
     assertThatThrownBy(() -> gkeClusterHelper.listClusters(DUMMY_GCP_KEY_CHARS, false))
         .isInstanceOf(GcpServerException.class);
   }
-
 }

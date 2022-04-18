@@ -835,33 +835,33 @@ public class KubernetesContainerServiceImplTest extends CategoryTest {
     String caData = "myCaData";
     String namespace = "myNamespace";
     KubernetesConfig kubernetesConfig = KubernetesConfig.builder()
-      .masterUrl(masterUrl)
-      .caCert(caData.toCharArray())
-      .namespace(namespace)
-      .authType(GCP_OAUTH)
-      .build();
+                                            .masterUrl(masterUrl)
+                                            .caCert(caData.toCharArray())
+                                            .namespace(namespace)
+                                            .authType(GCP_OAUTH)
+                                            .build();
 
     String expectedConfigPattern = "apiVersion: v1\n"
-      + "clusters:\n"
-      + "- cluster:\n"
-      + "    server: %s\n"
-      + "    \n"
-      + "    certificate-authority-data: %s\n"
-      + "  name: CLUSTER_NAME\n"
-      + "contexts:\n"
-      + "- context:\n"
-      + "    cluster: CLUSTER_NAME\n"
-      + "    user: HARNESS_USER\n"
-      + "    namespace: %s\n"
-      + "  name: CURRENT_CONTEXT\n"
-      + "current-context: CURRENT_CONTEXT\n"
-      + "kind: Config\n"
-      + "preferences: {}\n"
-      + "users:\n"
-      + "- name: HARNESS_USER\n"
-      + "  user:\n"
-      + "    auth-provider:\n"
-      + "      name: gcp\n";
+        + "clusters:\n"
+        + "- cluster:\n"
+        + "    server: %s\n"
+        + "    \n"
+        + "    certificate-authority-data: %s\n"
+        + "  name: CLUSTER_NAME\n"
+        + "contexts:\n"
+        + "- context:\n"
+        + "    cluster: CLUSTER_NAME\n"
+        + "    user: HARNESS_USER\n"
+        + "    namespace: %s\n"
+        + "  name: CURRENT_CONTEXT\n"
+        + "current-context: CURRENT_CONTEXT\n"
+        + "kind: Config\n"
+        + "preferences: {}\n"
+        + "users:\n"
+        + "- name: HARNESS_USER\n"
+        + "  user:\n"
+        + "    auth-provider:\n"
+        + "      name: gcp\n";
     String expectedConfig = String.format(expectedConfigPattern, masterUrl, caData, namespace);
 
     // when

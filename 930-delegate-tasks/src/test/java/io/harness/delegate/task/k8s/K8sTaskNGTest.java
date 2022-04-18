@@ -415,7 +415,8 @@ public class K8sTaskNGTest extends CategoryTest {
     verify(rollingRequestHandler)
         .executeTask(eq(k8sDeployRequest), delegateTaskParamsCaptor.capture(), eq(logStreamingTaskClient),
             eq(emptyCommandUnitsProgress));
-    verify(containerDeploymentDelegateBaseHelper, times(1)).persistKubernetesConfig(any(KubernetesConfig.class), anyString());
+    verify(containerDeploymentDelegateBaseHelper, times(1))
+        .persistKubernetesConfig(any(KubernetesConfig.class), anyString());
 
     K8sDelegateTaskParams k8sDelegateTaskParams = delegateTaskParamsCaptor.getValue();
     assertCleanupWorkingDirectory(k8sDelegateTaskParams);
