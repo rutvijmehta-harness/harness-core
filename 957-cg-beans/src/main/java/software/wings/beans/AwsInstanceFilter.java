@@ -19,10 +19,12 @@ import java.util.ArrayList;
 import java.util.List;
 import lombok.Builder;
 import lombok.Data;
+import lombok.ToString;
 import lombok.experimental.FieldNameConstants;
 
 @Builder
 @FieldNameConstants(innerTypeName = "AwsInstanceFilterKeys")
+@ToString
 @OwnedBy(CDP)
 public class AwsInstanceFilter implements NestedAnnotationResolver {
   @Attributes(title = "VPC") private List<String> vpcIds = new ArrayList<>();
