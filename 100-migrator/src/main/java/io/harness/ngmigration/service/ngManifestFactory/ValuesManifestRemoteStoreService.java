@@ -20,7 +20,7 @@ import software.wings.ngmigration.NGMigrationEntityType;
 import com.google.inject.Inject;
 import java.util.Map;
 
-public class valuesConfig implements NgManifestService {
+public class ValuesManifestRemoteStoreService implements NgManifestService {
   @Inject ManifestMigrationService manifestMigrationService;
 
   @Override

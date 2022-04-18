@@ -20,8 +20,9 @@ import software.wings.ngmigration.NGMigrationEntityType;
 import com.google.inject.Inject;
 import java.util.Map;
 
-public class k8sManifestStoretypeRemote implements NgManifestService {
+public class K8sManifestRemoteStoreService implements NgManifestService {
   @Inject ManifestMigrationService manifestMigrationService;
+
   @Override
   public ManifestConfigWrapper getManifestConfigWrapper(ApplicationManifest applicationManifest,
       Map<CgEntityId, NgEntityDetail> migratedEntities, ManifestProvidedEntitySpec entitySpec) {

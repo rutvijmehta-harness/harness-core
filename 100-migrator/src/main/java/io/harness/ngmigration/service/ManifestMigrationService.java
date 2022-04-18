@@ -25,6 +25,7 @@ import io.harness.ngmigration.client.NGClient;
 import io.harness.ngmigration.client.PmsClient;
 import io.harness.ngmigration.expressions.MigratorExpressionUtils;
 import io.harness.ngmigration.service.ngManifestFactory.NgManifestFactory;
+import io.harness.ngmigration.service.ngManifestFactory.NgManifestService;
 import io.harness.pms.yaml.ParameterField;
 import io.harness.serializer.JsonUtils;
 
@@ -130,9 +131,10 @@ public class ManifestMigrationService implements NgMigrationService {
       if (manifestInput != null && manifestInput.getSpec() != null) {
         entitySpec = JsonUtils.treeToValue(manifestInput.getSpec(), ManifestProvidedEntitySpec.class);
       }
-      ManifestConfigWrapper ngManifestConfigWrapper =
-          manifestFactory.getManifestConfigWrapper(applicationManifest, migratedEntities, entitySpec);
-      ngManifests.add(ngManifestConfigWrapper);
+      NgManifestService ngManifestService = manifestFactory.getNgManifestService(applicationManifest);
+      ManifestConfigWrapper manifestConfigWrapper =
+          ngManifestService.getManifestConfigWrapper(applicationManifest, migratedEntities, entitySpec);
+      ngManifests.add(manifestConfigWrapper);
     }
     return ngManifests;
   }
