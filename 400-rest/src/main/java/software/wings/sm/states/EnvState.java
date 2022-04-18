@@ -8,9 +8,7 @@
 package software.wings.sm.states;
 
 import static io.harness.annotations.dev.HarnessTeam.CDC;
-import static io.harness.beans.ExecutionStatus.FAILED;
-import static io.harness.beans.ExecutionStatus.REJECTED;
-import static io.harness.beans.ExecutionStatus.SUCCESS;
+import static io.harness.beans.ExecutionStatus.*;
 import static io.harness.data.structure.EmptyPredicate.isEmpty;
 import static io.harness.data.structure.EmptyPredicate.isNotEmpty;
 import static io.harness.exception.WingsException.ExecutionContext.MANAGER;
@@ -67,7 +65,6 @@ import software.wings.beans.appmanifest.ApplicationManifest;
 import software.wings.beans.appmanifest.HelmChart;
 import software.wings.beans.artifact.Artifact;
 import software.wings.common.NotificationMessageResolver;
-import software.wings.service.impl.EnvironmentServiceImpl;
 import software.wings.service.impl.deployment.checks.DeploymentFreezeUtils;
 import software.wings.service.impl.workflow.WorkflowServiceHelper;
 import software.wings.service.intfc.ApplicationManifestService;
@@ -84,7 +81,6 @@ import software.wings.sm.State;
 import software.wings.sm.StateExecutionInstance;
 import software.wings.sm.StateType;
 import software.wings.sm.WorkflowStandardParams;
-import software.wings.stencils.Expand;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.github.reinert.jjschema.Attributes;
