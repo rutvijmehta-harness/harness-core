@@ -147,7 +147,7 @@ import ru.vyarus.guice.validator.group.annotation.ValidationGroups;
 @Singleton
 @Slf4j
 @TargetModule(HarnessModule._870_CG_ORCHESTRATION)
-public class EnvironmentServiceImpl implements EnvironmentService, DataProvider {
+public class EnvironmentServiceImpl implements EnvironmentService {
   @Inject private WingsPersistence wingsPersistence;
   // DO NOT DELETE THIS, PRUNE logic needs it
   @Inject private InstanceService instanceService;
@@ -275,16 +275,6 @@ public class EnvironmentServiceImpl implements EnvironmentService, DataProvider 
     pageRequest.addFilter(ServiceTemplateKeys.appId, EQ, environment.getAppId());
     pageRequest.addFilter(ServiceTemplateKeys.envId, EQ, environment.getUuid());
     environment.setServiceTemplates(serviceTemplateService.list(pageRequest, false, OBTAIN_VALUE).getResponse());
-  }
-
-  /**
-   * {@inheritDoc}
-   */
-  @Override
-  public Map<String, String> getData(String appId, Map<String, String> params) {
-    PageRequest<Environment> pageRequest = new PageRequest<>();
-    pageRequest.addFilter(EnvironmentKeys.appId, EQ, appId);
-    return list(pageRequest, false, null).stream().collect(toMap(Environment::getUuid, Environment::getName));
   }
 
   /**
