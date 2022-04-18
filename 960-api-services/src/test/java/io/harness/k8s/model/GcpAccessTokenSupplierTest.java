@@ -3,8 +3,12 @@ package io.harness.k8s.model;
 import static io.harness.rule.OwnerRule.BOGDAN;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import io.harness.category.element.UnitTests;
+import io.harness.exception.ExplanationException;
 import io.harness.rule.Owner;
 
 import com.google.api.client.auth.oauth2.StoredCredential;
@@ -42,7 +46,7 @@ public class GcpAccessTokenSupplierTest {
     googleCredential = GoogleCredential.fromStream(bis, transport, JacksonFactory.getDefaultInstance());
     googleCredential = googleCredential.createScoped(Collections.singleton(CLOUD_PLATFORM));
 
-    gcpAccessTokenSupplier = instantiateSupplier();
+    gcpAccessTokenSupplier = createSupplier();
   }
 
   @Test
@@ -97,12 +101,12 @@ public class GcpAccessTokenSupplierTest {
   @Category(UnitTests.class)
   public void shouldReuseTokenIfNewSupplierInstanceIsCreated() {
     // given
-    GcpAccessTokenSupplier firstInstance = instantiateSupplier();
+    GcpAccessTokenSupplier firstInstance = createSupplier();
     transport.addServiceAccount(googleCredential.getServiceAccountId(), "firstToken");
     String firstToken = firstInstance.get();
 
     // when
-    GcpAccessTokenSupplier secondInstance = instantiateSupplier();
+    GcpAccessTokenSupplier secondInstance = createSupplier();
     transport.addServiceAccount(googleCredential.getServiceAccountId(), "secondToken");
     String secondToken = secondInstance.get();
 
@@ -110,8 +114,25 @@ public class GcpAccessTokenSupplierTest {
     assertThat(firstToken).isEqualTo(secondToken);
   }
 
-  private GcpAccessTokenSupplier instantiateSupplier() {
+  @Test(expected = ExplanationException.class)
+  @Owner(developers = BOGDAN)
+  @Category(UnitTests.class)
+  public void shouldThrowExplanationExceptionIfCacheIsNotAvailable() throws IOException {
+    // given
+    DataStore<StoredCredential> exceptionThrowingCache = mock(DataStore.class);
+    when(exceptionThrowingCache.get(anyString())).thenThrow(new IOException());
+    GcpAccessTokenSupplier tokenSupplier = createSupplier(exceptionThrowingCache);
+
+    // when
+    tokenSupplier.get();
+  }
+
+  private GcpAccessTokenSupplier createSupplier() {
     return new GcpAccessTokenSupplier(DUMMY_GCP_KEY, unused -> googleCredential, cache, clock);
+  }
+
+  private GcpAccessTokenSupplier createSupplier(DataStore<StoredCredential> dataStore) {
+    return new GcpAccessTokenSupplier(DUMMY_GCP_KEY, unused -> googleCredential, dataStore, clock);
   }
 
   private static final String DUMMY_GCP_KEY = "{\n"

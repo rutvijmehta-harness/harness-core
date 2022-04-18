@@ -2,6 +2,7 @@ package io.harness.k8s.model;
 
 import io.harness.annotations.dev.HarnessTeam;
 import io.harness.annotations.dev.OwnedBy;
+import io.harness.exception.ExplanationException;
 
 import com.google.api.client.auth.oauth2.DataStoreCredentialRefreshListener;
 import com.google.api.client.auth.oauth2.StoredCredential;
@@ -32,18 +33,22 @@ public class GcpAccessTokenSupplier implements Supplier<String> {
   @Override
   public String get() {
     try {
-      StoredCredential storedCredential = cache.get(googleCredential.getServiceAccountId());
-      if (isNullOrExpired(storedCredential)) {
-        googleCredential.refreshToken();
-      }
-      return cache.get(googleCredential.getServiceAccountId()).getAccessToken();
+      return tryToGetToken();
     } catch (IOException e) {
-      throw new RuntimeException(e);
+      throw new ExplanationException("Could not get token from cache. Should not happen with in-memory caches.", e);
     }
   }
 
   public String getServiceAccountJsonKey() {
     return serviceAccountJsonKey;
+  }
+
+  private String tryToGetToken() throws IOException {
+    StoredCredential storedCredential = cache.get(googleCredential.getServiceAccountId());
+    if (isNullOrExpired(storedCredential)) {
+      googleCredential.refreshToken();
+    }
+    return cache.get(googleCredential.getServiceAccountId()).getAccessToken();
   }
 
   private boolean isNullOrExpired(StoredCredential storedCredential) {
