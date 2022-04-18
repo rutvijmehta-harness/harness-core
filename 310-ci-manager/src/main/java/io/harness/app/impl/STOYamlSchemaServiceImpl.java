@@ -26,20 +26,20 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-@OwnedBy(HarnessTeam.CI)
-public class CIYamlSchemaServiceImpl extends StageYamlSchemaServiceImpl {
+@OwnedBy(HarnessTeam.STO)
+public class STOYamlSchemaServiceImpl extends StageYamlSchemaServiceImpl {
   @Inject
-  public CIYamlSchemaServiceImpl(YamlSchemaProvider yamlSchemaProvider, YamlSchemaGenerator yamlSchemaGenerator,
+  public STOYamlSchemaServiceImpl(YamlSchemaProvider yamlSchemaProvider, YamlSchemaGenerator yamlSchemaGenerator,
       @Named("yaml-schema-subtypes") Map<Class<?>, Set<Class<?>>> yamlSchemaSubtypes,
       List<YamlSchemaRootClass> yamlSchemaRootClasses, AccountClient accountClient,
       FeatureRestrictionsGetter featureRestrictionsGetter) {
     super(yamlSchemaProvider, yamlSchemaGenerator, yamlSchemaSubtypes, yamlSchemaRootClasses, accountClient,
         featureRestrictionsGetter);
-    this.moduleType = ModuleType.CI;
-    this.stageEntityType = EntityType.INTEGRATION_STAGE;
-    this.stepsEntityType = EntityType.INTEGRATION_STEPS;
-    this.stageNamespace = YAMLFieldNameConstants.CI;
-    this.stageType = StepSpecTypeConstants.CI_STAGE;
+    this.moduleType = ModuleType.STO;
+    this.stageEntityType = EntityType.SECURITY_STAGE;
+    this.stepsEntityType = EntityType.SECURITY_STEPS;
+    this.stageNamespace = YAMLFieldNameConstants.SECURITY;
+    this.stageType = StepSpecTypeConstants.SECURITY_STAGE;
     this.stageNodeClass = IntegrationStageNode.class;
   }
 }
