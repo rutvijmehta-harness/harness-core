@@ -18,6 +18,7 @@ import io.harness.connector.ConnectorResourceClient;
 import io.harness.connector.ConnectorResourceClientModule;
 import io.harness.delegate.DelegateServiceResourceClient;
 import io.harness.delegate.DelegateServiceResourceClientModule;
+import io.harness.envgroup.EnvironmentGroupResourceClientModule;
 import io.harness.environment.EnvironmentResourceClientModule;
 import io.harness.gitops.GitopsResourceClientModule;
 import io.harness.gitops.remote.GitopsResourceClient;
@@ -143,6 +144,8 @@ public class ResourceGroupModule extends AbstractModule {
         new ServiceResourceClientModule(ngManagerHttpClientConfig, ngManagerSecret, RESOUCE_GROUP_SERVICE.toString()));
     install(new EnvironmentResourceClientModule(
         ngManagerHttpClientConfig, ngManagerSecret, RESOUCE_GROUP_SERVICE.toString()));
+    install(new EnvironmentGroupResourceClientModule(
+            ngManagerHttpClientConfig, ngManagerSecret, RESOUCE_GROUP_SERVICE.toString()));
     install(new TemplateResourceClientModule(
         ServiceHttpClientConfig.builder().baseUrl(resourceClients.getTemplateService().getBaseUrl()).build(),
         resourceClients.getTemplateService().getSecret(), RESOUCE_GROUP_SERVICE.toString()));
