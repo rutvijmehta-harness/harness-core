@@ -11,6 +11,7 @@ import static java.lang.String.format;
 
 import io.harness.cistatus.StatusCreationResponse;
 import io.harness.exception.InvalidRequestException;
+import io.harness.git.GitClientHelper;
 import io.harness.gitsync.common.impl.GitUtils;
 import io.harness.network.Http;
 import io.harness.security.encryption.EncryptedDataDetail;
@@ -42,7 +43,7 @@ public class BitbucketServiceImpl implements BitbucketService {
     try {
       Response<StatusCreationResponse> statusCreationResponseResponse;
 
-      if (!GitUtils.isBitBucketCloud(bitbucketConfig.getBitbucketUrl())) {
+      if (!GitClientHelper.isBitBucketSAAS(bitbucketConfig.getBitbucketUrl())) {
         statusCreationResponseResponse =
             getBitbucketClient(bitbucketConfig, encryptionDetails)
                 .createOnPremStatus(getHeaderWithCredentials(token, userName), sha, bodyObjectMap)
