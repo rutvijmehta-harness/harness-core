@@ -7,7 +7,6 @@
 
 package io.harness.azure.client;
 
-import io.harness.azure.AzureEnvironmentType;
 import io.harness.azure.context.ARMDeploymentSteadyStateContext;
 import io.harness.azure.context.AzureClientContext;
 import io.harness.azure.model.AzureARMRGTemplateExportOptions;
@@ -17,6 +16,7 @@ import io.harness.azure.model.management.ManagementGroupInfo;
 
 import com.microsoft.azure.PagedList;
 import com.microsoft.azure.management.resources.Deployment;
+import com.microsoft.azure.management.resources.ResourceGroup;
 import com.microsoft.azure.management.resources.implementation.DeploymentExtendedInner;
 import com.microsoft.azure.management.resources.implementation.DeploymentOperationInner;
 import com.microsoft.azure.management.resources.implementation.DeploymentValidateResultInner;
@@ -181,34 +181,10 @@ public interface AzureManagementClient {
   String getARMDeploymentOutputs(ARMDeploymentSteadyStateContext context);
 
   /**
-   * Validate azure connection with a provided clientId, tenantId, secret and environment type. Will throw exception if
-   * connection can't be made
-   * @param clientId
-   * @param tenantId
-   * @param secret
-   * @param azureEnvironmentType
+   * List all resource groups by subscriptionId
+   * @param azureConfig
+   * @param subscriptionId
+   * @return list of resource groups
    */
-  void validateAzureConnection(
-      String clientId, String tenantId, String secret, AzureEnvironmentType azureEnvironmentType);
-
-  /**
-   * Validate azure connection with a provided clientId, tenantId, certificate and environment type. Will throw
-   * exception if connection can't be made
-   * @param clientId
-   * @param tenantId
-   * @param cert
-   * @param azureEnvironmentType
-   */
-  void validateAzureConnectionWithCert(
-      String clientId, String tenantId, byte[] cert, AzureEnvironmentType azureEnvironmentType);
-
-  /**
-   * Validate azure connection with a managed identity. Will throw exception if
-   * connection can't be made
-   * @param isUserAssignedMangedIdentity
-   * @param clientId
-   * @param azureEnvironmentType
-   */
-  void validateAzureConnection(
-      boolean isUserAssignedMangedIdentity, String clientId, AzureEnvironmentType azureEnvironmentType);
+  PagedList<ResourceGroup> listResourceGroups(AzureConfig azureConfig, String subscriptionId);
 }

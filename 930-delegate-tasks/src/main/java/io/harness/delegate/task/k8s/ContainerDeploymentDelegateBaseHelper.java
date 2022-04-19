@@ -129,12 +129,10 @@ public class ContainerDeploymentDelegateBaseHelper {
           gcpK8sInfraDelegateConfig.getNamespace());
     } else if (clusterConfigDTO instanceof AzureK8sInfraDelegateConfig) {
       AzureK8sInfraDelegateConfig azureK8sInfraDelegateConfig = (AzureK8sInfraDelegateConfig) clusterConfigDTO;
-      AzureCredentialDTO azureCredentials = azureK8sInfraDelegateConfig.getAzureConnectorDTO().getCredential();
-      return azureNgHelper.getClusterConfig(
-          azureCredentials.getAzureCredentialType() == AzureCredentialType.INHERIT_FROM_DELEGATE,
-          azureK8sInfraDelegateConfig.getAzureConnectorDTO(), azureK8sInfraDelegateConfig.getSubscription(),
-          azureK8sInfraDelegateConfig.getResourceGroup(), azureK8sInfraDelegateConfig.getCluster(),
-          azureK8sInfraDelegateConfig.getNamespace(), azureK8sInfraDelegateConfig.getEncryptionDataDetails());
+      return azureNgHelper.getClusterConfig(azureK8sInfraDelegateConfig.getAzureConnectorDTO(),
+          azureK8sInfraDelegateConfig.getSubscription(), azureK8sInfraDelegateConfig.getResourceGroup(),
+          azureK8sInfraDelegateConfig.getCluster(), azureK8sInfraDelegateConfig.getNamespace(),
+          azureK8sInfraDelegateConfig.getEncryptionDataDetails());
     } else {
       throw new InvalidRequestException("Unhandled K8sInfraDelegateConfig " + clusterConfigDTO.getClass());
     }

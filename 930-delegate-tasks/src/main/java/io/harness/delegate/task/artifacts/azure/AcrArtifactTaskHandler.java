@@ -11,7 +11,7 @@ import io.harness.annotations.dev.HarnessTeam;
 import io.harness.annotations.dev.OwnedBy;
 import io.harness.artifacts.beans.BuildDetailsInternal;
 import io.harness.artifacts.comparator.BuildDetailsInternalComparatorDescending;
-import io.harness.azure.model.AzureNGConfig;
+import io.harness.azure.model.AzureConfig;
 import io.harness.data.structure.EmptyPredicate;
 import io.harness.delegate.beans.connector.azureconnector.AzureManualDetailsDTO;
 import io.harness.delegate.task.artifacts.DelegateArtifactTaskHandler;
@@ -38,7 +38,7 @@ public class AcrArtifactTaskHandler extends DelegateArtifactTaskHandler<AcrArtif
   @Override
   public ArtifactTaskExecutionResponse getLastSuccessfulBuild(AcrArtifactDelegateRequest attributesRequest) {
     BuildDetailsInternal lastSuccessfulBuild;
-    AzureNGConfig azureConfig =
+    AzureConfig azureConfig =
         AcrRequestResponseMapper.toAzureInternalConfig(attributesRequest, secretDecryptionService);
 
     if (isRegex(attributesRequest)) {
@@ -58,7 +58,7 @@ public class AcrArtifactTaskHandler extends DelegateArtifactTaskHandler<AcrArtif
 
   @Override
   public ArtifactTaskExecutionResponse getBuilds(AcrArtifactDelegateRequest attributesRequest) {
-    AzureNGConfig azureConfig =
+    AzureConfig azureConfig =
         AcrRequestResponseMapper.toAzureInternalConfig(attributesRequest, secretDecryptionService);
     List<BuildDetailsInternal> builds = azureNgHelper.getBuilds(azureConfig, attributesRequest.getSubscription(),
         attributesRequest.getRegistry(), attributesRequest.getRepository());

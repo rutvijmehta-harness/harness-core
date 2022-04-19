@@ -20,10 +20,13 @@ import io.harness.CategoryTest;
 import io.harness.annotations.dev.HarnessTeam;
 import io.harness.annotations.dev.OwnedBy;
 import io.harness.azure.AzureEnvironmentType;
-import io.harness.azure.client.AzureNgClient;
-import io.harness.azure.model.AzureNGConfig;
-import io.harness.azure.model.AzureNGInheritDelegateCredentialsConfig;
-import io.harness.azure.model.AzureNGManualCredentialsConfig;
+import io.harness.azure.client.AzureAuthorizationClient;
+import io.harness.azure.client.AzureComputeClient;
+import io.harness.azure.client.AzureContainerRegistryClient;
+import io.harness.azure.client.AzureKubernetesClient;
+import io.harness.azure.client.AzureManagementClient;
+import io.harness.azure.model.AzureAuthenticationType;
+import io.harness.azure.model.AzureConfig;
 import io.harness.category.element.UnitTests;
 import io.harness.connector.ConnectivityStatus;
 import io.harness.connector.ConnectorValidationResult;
@@ -62,8 +65,11 @@ public class AzureNgHelperTest extends CategoryTest {
   @InjectMocks AzureNgHelper azureNgHelper;
   @Mock private SecretDecryptionService secretDecryptionService;
   @Mock private NGErrorHelper ngErrorHelper;
-  @Mock private AzureNgClient azureNgClient;
-
+  @Mock private AzureAuthorizationClient azureAuthorizationClient;
+  @Mock private AzureComputeClient azureComputeClient;
+  @Mock private AzureManagementClient azureManagementClient;
+  @Mock private AzureContainerRegistryClient azureContainerRegistryClient;
+  @Mock private AzureKubernetesClient azureKubernetesClient;
   String clientId = "clientId";
   String tenantId = "tenantId";
   String secretIdentifier = "secretKey";
@@ -79,18 +85,18 @@ public class AzureNgHelperTest extends CategoryTest {
   @Category(UnitTests.class)
   public void testValidateSuccessConnectionWithSecretKey() {
     AzureConnectorDTO azureConnectorDTO = getAzureConnectorDTOWithSecretType(AzureSecretType.SECRET_KEY);
-    AzureNGConfig azureConfig = AzureNGManualCredentialsConfig.builder()
-                                    .clientId(clientId)
-                                    .tenantId(tenantId)
-                                    .key(pass.toCharArray())
-                                    .azureEnvironmentType(AzureEnvironmentType.AZURE)
-                                    .build();
+    AzureConfig azureConfig = AzureConfig.builder()
+                                  .clientId(clientId)
+                                  .tenantId(tenantId)
+                                  .key(pass.toCharArray())
+                                  .azureEnvironmentType(AzureEnvironmentType.AZURE)
+                                  .build();
 
     ConnectorValidationResult result = azureNgHelper.getConnectorValidationResult(null, azureConnectorDTO);
 
     assertThat(result.getStatus()).isEqualTo(ConnectivityStatus.SUCCESS);
     verify(secretDecryptionService).decrypt(any(), any());
-    verify(azureNgClient).validateAzureConnection(azureConfig);
+    verify(azureAuthorizationClient).validateAzureConnection(azureConfig);
   }
 
   @Test
@@ -98,18 +104,19 @@ public class AzureNgHelperTest extends CategoryTest {
   @Category(UnitTests.class)
   public void testValidateSuccessConnectionWithCert() {
     AzureConnectorDTO azureConnectorDTO = getAzureConnectorDTOWithSecretType(AzureSecretType.KEY_CERT);
-    AzureNGConfig azureConfig = AzureNGManualCredentialsConfig.builder()
-                                    .clientId(clientId)
-                                    .tenantId(tenantId)
-                                    .cert(pass.getBytes())
-                                    .azureEnvironmentType(AzureEnvironmentType.AZURE)
-                                    .build();
+    AzureConfig azureConfig = AzureConfig.builder()
+                                  .clientId(clientId)
+                                  .tenantId(tenantId)
+                                  .cert(pass.getBytes())
+                                  .azureEnvironmentType(AzureEnvironmentType.AZURE)
+                                  .azureAuthenticationType(AzureAuthenticationType.SERVICE_PRINCIPAL_CERT)
+                                  .build();
 
     ConnectorValidationResult result = azureNgHelper.getConnectorValidationResult(null, azureConnectorDTO);
 
     assertThat(result.getStatus()).isEqualTo(ConnectivityStatus.SUCCESS);
     verify(secretDecryptionService).decrypt(any(), any());
-    verify(azureNgClient).validateAzureConnection(azureConfig);
+    verify(azureAuthorizationClient).validateAzureConnection(azureConfig);
   }
 
   @Test
@@ -117,19 +124,20 @@ public class AzureNgHelperTest extends CategoryTest {
   @Category(UnitTests.class)
   public void testValidationFailedWithSecretKey() {
     AzureConnectorDTO azureConnectorDTO = getAzureConnectorDTOWithSecretType(AzureSecretType.SECRET_KEY);
-    AzureNGConfig azureConfig = AzureNGManualCredentialsConfig.builder()
-                                    .clientId(clientId)
-                                    .tenantId(tenantId)
-                                    .key(pass.toCharArray())
-                                    .azureEnvironmentType(AzureEnvironmentType.AZURE)
-                                    .build();
+    AzureConfig azureConfig = AzureConfig.builder()
+                                  .clientId(clientId)
+                                  .tenantId(tenantId)
+                                  .key(pass.toCharArray())
+                                  .azureEnvironmentType(AzureEnvironmentType.AZURE)
+                                  .azureAuthenticationType(AzureAuthenticationType.SERVICE_PRINCIPAL_SECRET)
+                                  .build();
     doThrow(new AuthenticationException("Invalid Azure credentials."))
-        .when(azureNgClient)
+        .when(azureAuthorizationClient)
         .validateAzureConnection(any());
     ConnectorValidationResult result = azureNgHelper.getConnectorValidationResult(null, azureConnectorDTO);
 
     verify(secretDecryptionService).decrypt(any(), any());
-    verify(azureNgClient).validateAzureConnection(azureConfig);
+    verify(azureAuthorizationClient).validateAzureConnection(azureConfig);
     verify(ngErrorHelper).createErrorDetail("Invalid Azure credentials.");
     assertThat(result.getStatus()).isEqualTo(ConnectivityStatus.FAILURE);
   }
@@ -190,11 +198,11 @@ public class AzureNgHelperTest extends CategoryTest {
   @Owner(developers = MLUKIC)
   @Category(UnitTests.class)
   public void testGetConnectorValidationResultWithInheritFromDelegateUserAssignedMSIConnection() {
-    AzureNGConfig azureNGConfig = AzureNGInheritDelegateCredentialsConfig.builder()
-                                      .azureEnvironmentType(AzureEnvironmentType.AZURE)
-                                      .clientId("testClientId")
-                                      .isUserAssignedManagedIdentity(true)
-                                      .build();
+    AzureConfig azureNGConfig = AzureConfig.builder()
+                                    .azureEnvironmentType(AzureEnvironmentType.AZURE)
+                                    .clientId("testClientId")
+                                    .azureAuthenticationType(AzureAuthenticationType.MANAGED_IDENTITY_USER_ASSIGNED)
+                                    .build();
 
     AzureConnectorDTO azureConnectorDTO = getAzureConnectorDTOWithMSI("testClientId");
 
@@ -202,17 +210,17 @@ public class AzureNgHelperTest extends CategoryTest {
 
     assertThat(result.getStatus()).isEqualTo(ConnectivityStatus.SUCCESS);
 
-    verify(azureNgClient).validateAzureConnection(azureNGConfig);
+    verify(azureAuthorizationClient).validateAzureConnection(azureNGConfig);
   }
 
   @Test
   @Owner(developers = MLUKIC)
   @Category(UnitTests.class)
   public void testGetConnectorValidationResultWithInheritFromDelegateSystemAssignedMSIConnection() {
-    AzureNGConfig azureNGConfig = AzureNGInheritDelegateCredentialsConfig.builder()
-                                      .azureEnvironmentType(AzureEnvironmentType.AZURE)
-                                      .isUserAssignedManagedIdentity(false)
-                                      .build();
+    AzureConfig azureNGConfig = AzureConfig.builder()
+                                    .azureEnvironmentType(AzureEnvironmentType.AZURE)
+                                    .azureAuthenticationType(AzureAuthenticationType.MANAGED_IDENTITY_SYSTEM_ASSIGNED)
+                                    .build();
 
     AzureConnectorDTO azureConnectorDTO = getAzureConnectorDTOWithMSI(null);
 
@@ -220,27 +228,27 @@ public class AzureNgHelperTest extends CategoryTest {
 
     assertThat(result.getStatus()).isEqualTo(ConnectivityStatus.SUCCESS);
 
-    verify(azureNgClient).validateAzureConnection(azureNGConfig);
+    verify(azureAuthorizationClient).validateAzureConnection(azureNGConfig);
   }
 
   @Test
   @Owner(developers = MLUKIC)
   @Category(UnitTests.class)
   public void testGetConnectorValidationResultWithInheritFromDelegateUserAssignedMSIConnectionFailure() {
-    AzureNGConfig azureNGConfig = AzureNGInheritDelegateCredentialsConfig.builder()
-                                      .azureEnvironmentType(AzureEnvironmentType.AZURE)
-                                      .clientId("badTestClientId")
-                                      .isUserAssignedManagedIdentity(true)
-                                      .build();
+    AzureConfig azureConfig = AzureConfig.builder()
+                                  .azureEnvironmentType(AzureEnvironmentType.AZURE)
+                                  .clientId("badTestClientId")
+                                  .azureAuthenticationType(AzureAuthenticationType.MANAGED_IDENTITY_USER_ASSIGNED)
+                                  .build();
 
     AzureConnectorDTO azureConnectorDTO = getAzureConnectorDTOWithMSI("badTestClientId");
 
     doThrow(new AuthenticationException("Failed to connect to Azure cluster."))
-        .when(azureNgClient)
-        .validateAzureConnection(azureNGConfig);
+        .when(azureAuthorizationClient)
+        .validateAzureConnection(azureConfig);
     ConnectorValidationResult result = azureNgHelper.getConnectorValidationResult(null, azureConnectorDTO);
 
-    verify(azureNgClient).validateAzureConnection(azureNGConfig);
+    verify(azureAuthorizationClient).validateAzureConnection(azureConfig);
     assertThat(result.getStatus()).isEqualTo(ConnectivityStatus.FAILURE);
   }
 
@@ -248,17 +256,17 @@ public class AzureNgHelperTest extends CategoryTest {
   @Owner(developers = MLUKIC)
   @Category(UnitTests.class)
   public void testGetConnectorValidationResultWithInheritFromDelegateSystemAssignedMSIConnectionFailure() {
-    AzureNGConfig azureNGConfig = AzureNGInheritDelegateCredentialsConfig.builder()
-                                      .azureEnvironmentType(AzureEnvironmentType.AZURE)
-                                      .isUserAssignedManagedIdentity(false)
-                                      .build();
+    AzureConfig azureConfig = AzureConfig.builder()
+                                  .azureEnvironmentType(AzureEnvironmentType.AZURE)
+                                  .azureAuthenticationType(AzureAuthenticationType.MANAGED_IDENTITY_SYSTEM_ASSIGNED)
+                                  .build();
     AzureConnectorDTO azureConnectorDTO = getAzureConnectorDTOWithMSI(null);
     doThrow(new InvalidRequestException("Failed to connect to Azure cluster.", USER))
-        .when(azureNgClient)
-        .validateAzureConnection(azureNGConfig);
+        .when(azureAuthorizationClient)
+        .validateAzureConnection(azureConfig);
     ConnectorValidationResult result = azureNgHelper.getConnectorValidationResult(null, azureConnectorDTO);
 
-    verify(azureNgClient).validateAzureConnection(azureNGConfig);
+    verify(azureAuthorizationClient).validateAzureConnection(azureConfig);
     assertThat(result.getStatus()).isEqualTo(ConnectivityStatus.FAILURE);
   }
 }
