@@ -25,7 +25,6 @@ import io.harness.annotations.dev.HarnessTeam;
 import io.harness.annotations.dev.OwnedBy;
 import io.harness.beans.IdentifierRef;
 import io.harness.common.EntityReferenceHelper;
-import io.harness.common.NGExpressionUtils;
 import io.harness.data.structure.EmptyPredicate;
 import io.harness.exception.ngexception.NGTemplateException;
 import io.harness.exception.ngexception.beans.templateservice.TemplateInputsErrorDTO;
@@ -438,7 +437,6 @@ public class TemplateMergeHelper {
       if (isTemplatePresent(fieldName, value)) {
         JsonNode updatedValue = function(accountId, orgId, projectId, value, templateCacheMap);
         // put the updated value in the childyamlfield node
-        YamlNode updatedChildNode = new YamlNode(fieldName, updatedValue);
         continue;
       }
     }
@@ -478,8 +476,7 @@ public class TemplateMergeHelper {
     String dummyTemplateInputsYaml = convertToYaml(dummyTemplateInputsMap);
 
     Map<FQN, Object> templateSpecMap = function3(dummyTemplateInputsYaml, templateSpecYaml);
-    YamlConfig yamlConfig = new YamlConfig(templateSpecMap, templateSpec);
-    return yamlConfig;
+    return new YamlConfig(templateSpecMap, templateSpec);
   }
 
   private Map<FQN, Object> function3(String originalYaml, String templateSpecYaml) {
@@ -495,8 +492,6 @@ public class TemplateMergeHelper {
         if (matchesInputSetPattern(templateSpecMap.get(key).toString())) {
           templateSpecMap.replace(key, value);
         }
-      } else {
-        // do nothing. key,value already present in the template spec.
       }
     });
     return templateSpecMap;

@@ -633,8 +633,6 @@ public class NGTemplateResource {
       @QueryParam(NGCommonEntityConstants.PROJECT_KEY) @ProjectIdentifier String projectId,
       @BeanParam GitEntityFindInfoDTO gitEntityBasicInfo, RefreshRequestDTO refreshRequest) {
     String refreshedYaml = templateMergeHelper.refreshTemplates(accountId, orgId, projectId, refreshRequest.getYaml());
-    RefreshResponseDTO refreshResponse = RefreshResponseDTO.builder().refreshedYaml(refreshedYaml).build();
-
-    return refreshResponse;
+    return RefreshResponseDTO.builder().refreshedYaml(refreshedYaml).build();
   }
 }
