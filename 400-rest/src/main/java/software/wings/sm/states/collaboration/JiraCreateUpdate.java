@@ -199,7 +199,10 @@ public class JiraCreateUpdate extends State implements SweepingOutputStateMixin 
     }
 
     if (EmptyPredicate.isNotEmpty(customFields)) {
-      JiraCreateMetaResponse createMetadata = createMeta == null ? jiraHelperService.getCreateMetadata(jiraConnectorId, null, project, accountId, context.getAppId(), getTimeoutMillis(), issueType) : createMeta;
+      JiraCreateMetaResponse createMetadata = createMeta == null
+          ? jiraHelperService.getCreateMetadata(
+              jiraConnectorId, null, project, accountId, context.getAppId(), getTimeoutMillis(), issueType)
+          : createMeta;
 
       Map<String, String> customFieldsIdToNameMap = mapCustomFieldsIdsToNames(createMetadata);
       Map<String, Map<Object, Object>> customFieldsValueToIdMap =

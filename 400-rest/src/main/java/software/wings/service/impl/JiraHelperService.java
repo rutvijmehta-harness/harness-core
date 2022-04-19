@@ -269,8 +269,8 @@ public class JiraHelperService {
     }
   }
 
-  public JiraCreateMetaResponse getCreateMetadata(
-      String connectorId, String expand, String project, String accountId, String appId, long timeoutMillis, String issueType) {
+  public JiraCreateMetaResponse getCreateMetadata(String connectorId, String expand, String project, String accountId,
+      String appId, long timeoutMillis, String issueType) {
     JiraTaskParameters jiraTaskParameters = JiraTaskParameters.builder()
                                                 .accountId(accountId)
                                                 .jiraAction(JiraAction.GET_CREATE_METADATA)
