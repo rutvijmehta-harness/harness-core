@@ -159,9 +159,9 @@ public class K8sEntityHelper {
       case KUBERNETES_AZURE:
         K8sAzureInfrastructureOutcome k8sAzureInfrastructure = (K8sAzureInfrastructureOutcome) infrastructure;
         KubernetesHelperService.validateNamespace(k8sAzureInfrastructure.getNamespace());
+        KubernetesHelperService.validateSubscription(k8sAzureInfrastructure.getSubscription());
+        KubernetesHelperService.validateResourceGroup(k8sAzureInfrastructure.getResourceGroup());
         KubernetesHelperService.validateCluster(k8sAzureInfrastructure.getCluster());
-        KubernetesHelperService.validateCluster(k8sAzureInfrastructure.getSubscription());
-        KubernetesHelperService.validateCluster(k8sAzureInfrastructure.getResourceGroup());
 
         return AzureK8sInfraDelegateConfig.builder()
             .namespace(k8sAzureInfrastructure.getNamespace())

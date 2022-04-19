@@ -15,6 +15,7 @@ import io.harness.azure.response.AzureClustersDTO;
 import io.harness.azure.response.AzureResourceGroupsDTO;
 import io.harness.azure.response.AzureSubscriptionsDTO;
 
+import com.microsoft.azure.management.containerservice.KubernetesCluster;
 import java.util.List;
 
 public interface AzureNgClient {
@@ -76,4 +77,6 @@ public interface AzureNgClient {
    */
   List<BuildDetailsInternal> listBuildDetails(
       AzureNGConfig azureNGConfig, String subscriptionId, String registryName, String repositoryName);
+
+  KubernetesCluster getCluster(AzureNGConfig azureNGConfig, String subscription, String resourceGroup, String cluster);
 }

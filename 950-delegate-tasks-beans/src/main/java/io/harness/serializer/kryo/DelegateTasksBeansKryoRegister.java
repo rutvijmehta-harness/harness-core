@@ -10,6 +10,16 @@ package io.harness.serializer.kryo;
 import static io.harness.annotations.dev.HarnessTeam.DEL;
 
 import io.harness.annotations.dev.OwnedBy;
+import io.harness.azure.response.AcrRegistriesDTO;
+import io.harness.azure.response.AcrRegistryDTO;
+import io.harness.azure.response.AcrRepositoriesDTO;
+import io.harness.azure.response.AcrRepositoryDTO;
+import io.harness.azure.response.AzureClusterDTO;
+import io.harness.azure.response.AzureClustersDTO;
+import io.harness.azure.response.AzureResourceGroupDTO;
+import io.harness.azure.response.AzureResourceGroupsDTO;
+import io.harness.azure.response.AzureSubscriptionDTO;
+import io.harness.azure.response.AzureSubscriptionsDTO;
 import io.harness.capability.AwsRegionParameters;
 import io.harness.capability.CapabilityParameters;
 import io.harness.capability.CapabilitySubjectPermission.PermissionResult;
@@ -371,6 +381,7 @@ import io.harness.delegate.task.http.HttpTaskParameters;
 import io.harness.delegate.task.http.HttpTaskParametersNg;
 import io.harness.delegate.task.jira.JiraTaskNGParameters;
 import io.harness.delegate.task.jira.JiraTaskNGResponse;
+import io.harness.delegate.task.k8s.AzureK8sInfraDelegateConfig;
 import io.harness.delegate.task.k8s.DeleteResourcesType;
 import io.harness.delegate.task.k8s.DirectK8sInfraDelegateConfig;
 import io.harness.delegate.task.k8s.GcpK8sInfraDelegateConfig;
@@ -1156,5 +1167,6 @@ public class DelegateTasksBeansKryoRegister implements KryoRegistrar {
     kryo.register(AcrArtifactDelegateResponse.class, 543500);
     kryo.register(AzureResourceGroupsResponse.class, 543501);
     kryo.register(AzureClustersResponse.class, 543502);
+    kryo.register(AzureK8sInfraDelegateConfig.class, 543503);
   }
 }

@@ -33,6 +33,7 @@ import io.harness.azure.response.AzureResourceGroupDTO;
 import io.harness.azure.response.AzureResourceGroupsDTO;
 import io.harness.azure.response.AzureSubscriptionDTO;
 import io.harness.azure.response.AzureSubscriptionsDTO;
+import io.harness.exception.AzureAKSException;
 import io.harness.exception.AzureConfigException;
 import io.harness.exception.AzureContainerRegistryException;
 import io.harness.exception.NestedExceptionUtils;
@@ -46,11 +47,14 @@ import software.wings.helpers.ext.azure.AcrRegistryProperties;
 import com.google.inject.Singleton;
 import com.microsoft.azure.PagedList;
 import com.microsoft.azure.management.containerregistry.Registry;
+import com.microsoft.azure.management.containerservice.KubernetesCluster;
+import com.microsoft.azure.management.containerservice.KubernetesClusters;
 import com.microsoft.azure.management.resources.fluentcore.arm.models.HasName;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import retrofit2.Response;
@@ -165,17 +169,34 @@ public class AzureNgClientImpl extends AzureClient implements AzureNgClient {
         .build();
   }
 
+  private KubernetesClusters getClusters(AzureNGConfig azureNGConfig, String subscriptionId) {
+    return getAzureClientNg(azureNGConfig, subscriptionId).kubernetesClusters();
+  }
+
   @Override
   public AzureClustersDTO listClusters(AzureNGConfig azureNGConfig, String subscriptionId, String resourceGroup) {
     return AzureClustersDTO.builder()
-        .clusters(getAzureClientNg(azureNGConfig, subscriptionId)
-                      .kubernetesClusters()
+        .clusters(getClusters(azureNGConfig, subscriptionId)
                       .listByResourceGroup(resourceGroup)
                       .stream()
                       .map(HasName::name)
                       .map(cluster -> AzureClusterDTO.builder().cluster(cluster).build())
                       .collect(Collectors.toList()))
         .build();
+  }
+
+  @Override
+  public KubernetesCluster getCluster(
+      AzureNGConfig azureNGConfig, String subscriptionId, String resourceGroup, String clusterName) {
+    List<KubernetesCluster> azureClusters = getClusters(azureNGConfig, subscriptionId).list();
+    for (KubernetesCluster cluster : azureClusters) {
+      if (cluster.resourceGroupName().equalsIgnoreCase(resourceGroup) && cluster.name().equalsIgnoreCase(clusterName)) {
+        return cluster;
+      }
+    }
+    throw new AzureAKSException(
+        String.format("AKS Cluster %s has not been found for subscription %s and resourceGroup %s ", clusterName,
+            subscriptionId, resourceGroup));
   }
 
   @Override

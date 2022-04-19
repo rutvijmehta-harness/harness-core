@@ -15,6 +15,7 @@ import io.harness.artifacts.beans.BuildDetailsInternal;
 import io.harness.artifacts.comparator.BuildDetailsInternalComparatorDescending;
 import io.harness.azure.client.AzureNgClient;
 import io.harness.azure.model.AzureNGConfig;
+import io.harness.azure.model.AzureNGInheritDelegateCredentialsConfig;
 import io.harness.azure.model.AzureNGManualCredentialsConfig;
 import io.harness.azure.response.AcrRegistriesDTO;
 import io.harness.azure.response.AcrRepositoriesDTO;
@@ -34,12 +35,14 @@ import io.harness.errorhandling.NGErrorHelper;
 import io.harness.exception.AzureContainerRegistryException;
 import io.harness.exception.NestedExceptionUtils;
 import io.harness.expression.RegexFunctor;
+import io.harness.k8s.model.KubernetesConfig;
 import io.harness.logging.CommandExecutionStatus;
 import io.harness.security.encryption.EncryptedDataDetail;
 import io.harness.security.encryption.SecretDecryptionService;
 
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
+import com.microsoft.azure.management.containerservice.KubernetesCluster;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -173,6 +176,34 @@ public class AzureNgHelper {
                      .build();
     }
     return response;
+  }
+
+  public KubernetesConfig getClusterConfig(boolean useDelegate, AzureConnectorDTO azureConnector, String subscription,
+      String resourceGroup, String cluster, String namespace, List<EncryptedDataDetail> encryptedDataDetails) {
+    AzureNGConfig azureNGConfig = AcrRequestResponseMapper.toAzureInternalConfig(azureConnector.getCredential(),
+        encryptedDataDetails, azureConnector.getCredential().getAzureCredentialType(),
+        azureConnector.getAzureEnvironmentType(), secretDecryptionService);
+
+    KubernetesCluster k8sCluster = azureNgClient.getCluster(azureNGConfig, subscription, resourceGroup, cluster);
+
+    // TODO add additional credentials username, pass, cert...
+    if (azureNGConfig instanceof AzureNGManualCredentialsConfig) {
+      AzureNGManualCredentialsConfig azureConfig = (AzureNGManualCredentialsConfig) azureNGConfig;
+      // add logic for SPs
+      return KubernetesConfig.builder()
+          .masterUrl(k8sCluster.fqdn())
+          .namespace(namespace)
+          .username(k8sCluster.servicePrincipalClientId().toCharArray())
+          .password(k8sCluster.servicePrincipalSecret().toCharArray())
+          .build();
+
+    } else if (azureNGConfig instanceof AzureNGInheritDelegateCredentialsConfig) {
+      AzureNGInheritDelegateCredentialsConfig azureConfig = (AzureNGInheritDelegateCredentialsConfig) azureNGConfig;
+      // add logic for MSI
+      return null;
+    }
+
+    return null;
   }
 
   public AzureRepositoriesResponse listRepositories(List<EncryptedDataDetail> encryptionDetails,

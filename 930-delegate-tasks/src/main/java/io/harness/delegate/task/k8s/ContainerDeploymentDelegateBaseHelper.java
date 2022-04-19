@@ -19,6 +19,8 @@ import static java.util.Collections.emptyList;
 
 import io.harness.annotations.dev.OwnedBy;
 import io.harness.container.ContainerInfo;
+import io.harness.delegate.beans.connector.azureconnector.AzureCredentialDTO;
+import io.harness.delegate.beans.connector.azureconnector.AzureCredentialType;
 import io.harness.delegate.beans.connector.gcpconnector.GcpConnectorCredentialDTO;
 import io.harness.delegate.beans.connector.gcpconnector.GcpConnectorDTO;
 import io.harness.delegate.beans.connector.gcpconnector.GcpManualDetailsDTO;
@@ -26,6 +28,7 @@ import io.harness.delegate.beans.connector.k8Connector.KubernetesAuthCredentialD
 import io.harness.delegate.beans.connector.k8Connector.KubernetesClusterConfigDTO;
 import io.harness.delegate.beans.connector.k8Connector.KubernetesClusterDetailsDTO;
 import io.harness.delegate.beans.connector.k8Connector.KubernetesCredentialType;
+import io.harness.delegate.task.azure.AzureNgHelper;
 import io.harness.delegate.task.gcp.helpers.GkeClusterHelper;
 import io.harness.exception.ExceptionUtils;
 import io.harness.exception.InvalidRequestException;
@@ -64,6 +67,7 @@ public class ContainerDeploymentDelegateBaseHelper {
   @Inject private SecretDecryptionService secretDecryptionService;
   @Inject private GkeClusterHelper gkeClusterHelper;
   @Inject private EncryptionService encryptionService;
+  @Inject private AzureNgHelper azureNgHelper;
 
   public static final LoadingCache<String, Object> lockObjects =
       CacheBuilder.newBuilder().expireAfterAccess(30, TimeUnit.MINUTES).build(CacheLoader.from(Object::new));
@@ -123,6 +127,14 @@ public class ContainerDeploymentDelegateBaseHelper {
       return gkeClusterHelper.getCluster(getGcpServiceAccountKeyFileContent(gcpCredentials),
           gcpCredentials.getGcpCredentialType() == INHERIT_FROM_DELEGATE, gcpK8sInfraDelegateConfig.getCluster(),
           gcpK8sInfraDelegateConfig.getNamespace());
+    } else if (clusterConfigDTO instanceof AzureK8sInfraDelegateConfig) {
+      AzureK8sInfraDelegateConfig azureK8sInfraDelegateConfig = (AzureK8sInfraDelegateConfig) clusterConfigDTO;
+      AzureCredentialDTO azureCredentials = azureK8sInfraDelegateConfig.getAzureConnectorDTO().getCredential();
+      return azureNgHelper.getClusterConfig(
+          azureCredentials.getAzureCredentialType() == AzureCredentialType.INHERIT_FROM_DELEGATE,
+          azureK8sInfraDelegateConfig.getAzureConnectorDTO(), azureK8sInfraDelegateConfig.getSubscription(),
+          azureK8sInfraDelegateConfig.getResourceGroup(), azureK8sInfraDelegateConfig.getCluster(),
+          azureK8sInfraDelegateConfig.getNamespace(), azureK8sInfraDelegateConfig.getEncryptionDataDetails());
     } else {
       throw new InvalidRequestException("Unhandled K8sInfraDelegateConfig " + clusterConfigDTO.getClass());
     }
