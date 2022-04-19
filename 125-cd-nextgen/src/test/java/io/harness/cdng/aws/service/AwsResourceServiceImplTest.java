@@ -41,6 +41,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -156,5 +157,29 @@ public class AwsResourceServiceImplTest extends CategoryTest {
     IdentifierRef mockIdentifierRef = IdentifierRef.builder().build();
 
     service.getCFparametersKeys("s3", "bar", true, "far", "cat", "baz", mockIdentifierRef, "quux", "corge");
+  }
+
+  @Test()
+  @Owner(developers = NGONZALEZ)
+  @Category(UnitTests.class)
+  public void getCapabilities() {
+    List<String> capabilities = service.getCapabilities();
+    assertThat(capabilities).size().isEqualTo(3);
+  }
+
+  @Test()
+  @Owner(developers = NGONZALEZ)
+  @Category(UnitTests.class)
+  public void getCFStates() {
+    Set<String> states = service.getCFStates();
+    assertThat(states).size().isEqualTo(22);
+  }
+
+  @Test()
+  @Owner(developers = NGONZALEZ)
+  @Category(UnitTests.class)
+  public void getRegions() {
+    Map<String, String> regions = service.getRegions();
+    assertThat(regions).size().isEqualTo(19);
   }
 }

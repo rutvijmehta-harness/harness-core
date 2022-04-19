@@ -9,7 +9,6 @@ package io.harness.aws;
 
 import static io.harness.rule.OwnerRule.NGONZALEZ;
 
-import static java.util.Collections.emptyList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.joor.Reflect.on;
 import static org.mockito.Matchers.any;
@@ -21,6 +20,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import io.harness.CategoryTest;
 import io.harness.aws.beans.AwsInternalConfig;
@@ -41,12 +41,15 @@ import com.amazonaws.services.cloudformation.model.DescribeStackResourcesRequest
 import com.amazonaws.services.cloudformation.model.DescribeStackResourcesResult;
 import com.amazonaws.services.cloudformation.model.DescribeStacksRequest;
 import com.amazonaws.services.cloudformation.model.DescribeStacksResult;
+import com.amazonaws.services.cloudformation.model.GetTemplateSummaryResult;
+import com.amazonaws.services.cloudformation.model.ParameterDeclaration;
 import com.amazonaws.services.cloudformation.model.Stack;
 import com.amazonaws.services.cloudformation.model.StackEvent;
 import com.amazonaws.services.cloudformation.model.StackResource;
 import com.amazonaws.services.cloudformation.model.UpdateStackRequest;
 import com.amazonaws.services.cloudformation.waiters.AmazonCloudFormationWaiters;
 import com.amazonaws.waiters.Waiter;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Future;
 import org.junit.Before;
@@ -241,12 +244,16 @@ public class AWSCloudformationClientTest extends CategoryTest {
     AWSCloudformationClientImpl service = spy(new AWSCloudformationClientImpl());
     doReturn(mockClient).when(service).getAmazonCloudFormationClient(any(), any());
     doReturn(mockWaiter).when(service).getAmazonCloudFormationWaiter(any());
-    doReturn(emptyList()).when(service).getAllStackResources(any(), any(), any());
+    DescribeStackEventsResult result =
+        new DescribeStackEventsResult().withStackEvents(new StackEvent().withStackName(stackName).withEventId("id"));
+    doReturn(result).when(mockClient).describeStackEvents(any());
+    doReturn(new ArrayList<>()).when(service).getAllStackResources(any(), any(), any());
     doReturn(mockWaiterStack).when(mockWaiter).stackDeleteComplete();
-    doReturn(true).when(future).isDone();
+    when(future.isDone()).thenReturn(false).thenReturn(true);
     doReturn(future).when(mockWaiterStack).runAsync(any(), any());
     AwsCallTracker mockTracker = mock(AwsCallTracker.class);
     doNothing().when(mockTracker).trackCFCall(anyString());
+    doNothing().when(awsCloudformationPrintHelper).printStackResources(any(), any());
     on(service).set("tracker", mockTracker);
     on(service).set("awsCloudformationPrintHelper", awsCloudformationPrintHelper);
     service.waitForStackDeletionCompleted(request,
@@ -268,6 +275,8 @@ public class AWSCloudformationClientTest extends CategoryTest {
     DescribeStackEventsRequest describeStackEventsRequest = new DescribeStackEventsRequest().withStackName(stackName);
     CreateStackRequest createStackRequest = new CreateStackRequest().withStackName(stackName);
     UpdateStackRequest updateStackRequest = new UpdateStackRequest().withStackName(stackName);
+    DescribeStackResourcesRequest describeStackResourcesRequest =
+        new DescribeStackResourcesRequest().withStackName(stackName);
     AWSCloudformationClientImpl service = spy(mockCFAWSClient);
     doThrow(AmazonServiceException.class).when(service).getAmazonCloudFormationClient(any(), any());
     service.getAllStacks(
@@ -282,7 +291,11 @@ public class AWSCloudformationClientTest extends CategoryTest {
         region, updateStackRequest, AwsInternalConfig.builder().accessKey(accessKey).secretKey(secretKey).build());
     service.describeStacks(
         region, describeStacksRequest, AwsInternalConfig.builder().accessKey(accessKey).secretKey(secretKey).build());
-    verify(awsApiHelperService, times(6)).handleAmazonServiceException(any());
+    service.getAllStackResources(region, describeStackResourcesRequest,
+        AwsInternalConfig.builder().accessKey(accessKey).secretKey(secretKey).build());
+    service.waitForStackDeletionCompleted(describeStacksRequest,
+        AwsInternalConfig.builder().accessKey(accessKey).secretKey(secretKey).build(), region, null, 1000L);
+    verify(awsApiHelperService, times(8)).handleAmazonServiceException(any());
   }
 
   @Test
@@ -298,6 +311,8 @@ public class AWSCloudformationClientTest extends CategoryTest {
     DescribeStackEventsRequest describeStackEventsRequest = new DescribeStackEventsRequest().withStackName(stackName);
     CreateStackRequest createStackRequest = new CreateStackRequest().withStackName(stackName);
     UpdateStackRequest updateStackRequest = new UpdateStackRequest().withStackName(stackName);
+    DescribeStackResourcesRequest describeStackResourcesRequest =
+        new DescribeStackResourcesRequest().withStackName(stackName);
 
     AWSCloudformationClientImpl service = spy(mockCFAWSClient);
     doThrow(AmazonClientException.class).when(service).getAmazonCloudFormationClient(any(), any());
@@ -313,8 +328,11 @@ public class AWSCloudformationClientTest extends CategoryTest {
         region, updateStackRequest, AwsInternalConfig.builder().accessKey(accessKey).secretKey(secretKey).build());
     service.describeStacks(
         region, describeStacksRequest, AwsInternalConfig.builder().accessKey(accessKey).secretKey(secretKey).build());
-    verify(awsApiHelperService, times(6)).handleAmazonClientException(any());
+    service.getAllStackResources(region, describeStackResourcesRequest,
+        AwsInternalConfig.builder().accessKey(accessKey).secretKey(secretKey).build());
+    verify(awsApiHelperService, times(7)).handleAmazonClientException(any());
   }
+
   @Test(expected = Exception.class)
   @Owner(developers = NGONZALEZ)
   @Category(UnitTests.class)
@@ -329,6 +347,7 @@ public class AWSCloudformationClientTest extends CategoryTest {
     service.getAllStacks(
         region, describeStacksRequest, AwsInternalConfig.builder().accessKey(accessKey).secretKey(secretKey).build());
   }
+
   @Test(expected = Exception.class)
   @Owner(developers = NGONZALEZ)
   @Category(UnitTests.class)
@@ -342,5 +361,86 @@ public class AWSCloudformationClientTest extends CategoryTest {
     doThrow(Exception.class).when(service).getAmazonCloudFormationClient(any(), any());
     service.deleteStack(
         region, deleteStackRequest, AwsInternalConfig.builder().accessKey(accessKey).secretKey(secretKey).build());
+  }
+
+  @Test
+  @Owner(developers = NGONZALEZ)
+  @Category(UnitTests.class)
+  public void checkGetParamsDataForS3Template() {
+    char[] accessKey = "qwer".toCharArray();
+    char[] secretKey = "pqrs".toCharArray();
+    String data = "s3://bucket/template.yaml";
+    String region = "us-west-1";
+
+    AmazonCloudFormationClient mockClient = mock(AmazonCloudFormationClient.class);
+    AWSCloudformationClientImpl service = spy(new AWSCloudformationClientImpl());
+    doReturn(mockClient).when(service).getAmazonCloudFormationClient(any(), any());
+    GetTemplateSummaryResult result = new GetTemplateSummaryResult();
+    List<ParameterDeclaration> parameters = new ArrayList<>();
+    parameters.add(new ParameterDeclaration().withParameterKey("key1").withParameterType("String"));
+    parameters.add(new ParameterDeclaration().withParameterKey("key2").withParameterType("String"));
+    result.setParameters(parameters);
+    doReturn(result).when(mockClient).getTemplateSummary(any());
+    AwsCallTracker mockTracker = mock(AwsCallTracker.class);
+    doNothing().when(mockTracker).trackCFCall(anyString());
+    on(service).set("tracker", mockTracker);
+    List<ParameterDeclaration> response =
+        service.getParamsData(AwsInternalConfig.builder().accessKey(accessKey).secretKey(secretKey).build(), region,
+            data, AwsCFTemplatesType.S3);
+    assertThat(response).size().isEqualTo(2);
+    assertThat(response.get(0).getParameterKey()).isEqualTo("key1");
+    assertThat(response.get(1).getParameterKey()).isEqualTo("key2");
+  }
+
+  @Test
+  @Owner(developers = NGONZALEZ)
+  @Category(UnitTests.class)
+  public void checkGetParamsDataForS3TemplateThrowsServiceException() {
+    char[] accessKey = "qwer".toCharArray();
+    char[] secretKey = "pqrs".toCharArray();
+    String data = "s3://bucket/template.yaml";
+    String region = "us-west-1";
+
+    AmazonCloudFormationClient mockClient = mock(AmazonCloudFormationClient.class);
+    AWSCloudformationClientImpl service = spy(mockCFAWSClient);
+    doReturn(mockClient).when(service).getAmazonCloudFormationClient(any(), any());
+    GetTemplateSummaryResult result = new GetTemplateSummaryResult();
+    List<ParameterDeclaration> parameters = new ArrayList<>();
+    parameters.add(new ParameterDeclaration().withParameterKey("key1").withParameterType("String"));
+    parameters.add(new ParameterDeclaration().withParameterKey("key2").withParameterType("String"));
+    result.setParameters(parameters);
+    doThrow(AmazonServiceException.class).when(mockClient).getTemplateSummary(any());
+    AwsCallTracker mockTracker = mock(AwsCallTracker.class);
+    doNothing().when(mockTracker).trackCFCall(anyString());
+    on(service).set("tracker", mockTracker);
+    service.getParamsData(AwsInternalConfig.builder().accessKey(accessKey).secretKey(secretKey).build(), region, data,
+        AwsCFTemplatesType.S3);
+    verify(awsApiHelperService, times(1));
+  }
+
+  @Test
+  @Owner(developers = NGONZALEZ)
+  @Category(UnitTests.class)
+  public void checkGetParamsDataForS3TemplateThrowsClientException() {
+    char[] accessKey = "qwer".toCharArray();
+    char[] secretKey = "pqrs".toCharArray();
+    String data = "s3://bucket/template.yaml";
+    String region = "us-west-1";
+
+    AmazonCloudFormationClient mockClient = mock(AmazonCloudFormationClient.class);
+    AWSCloudformationClientImpl service = spy(mockCFAWSClient);
+    doReturn(mockClient).when(service).getAmazonCloudFormationClient(any(), any());
+    GetTemplateSummaryResult result = new GetTemplateSummaryResult();
+    List<ParameterDeclaration> parameters = new ArrayList<>();
+    parameters.add(new ParameterDeclaration().withParameterKey("key1").withParameterType("String"));
+    parameters.add(new ParameterDeclaration().withParameterKey("key2").withParameterType("String"));
+    result.setParameters(parameters);
+    doThrow(AmazonClientException.class).when(mockClient).getTemplateSummary(any());
+    AwsCallTracker mockTracker = mock(AwsCallTracker.class);
+    doNothing().when(mockTracker).trackCFCall(anyString());
+    on(service).set("tracker", mockTracker);
+    service.getParamsData(AwsInternalConfig.builder().accessKey(accessKey).secretKey(secretKey).build(), region, data,
+        AwsCFTemplatesType.S3);
+    verify(awsApiHelperService, times(1));
   }
 }

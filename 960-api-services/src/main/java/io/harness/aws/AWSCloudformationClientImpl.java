@@ -117,16 +117,19 @@ public class AWSCloudformationClientImpl implements AWSCloudformationClient {
   @Override
   public List<StackResource> getAllStackResources(
       String region, DescribeStackResourcesRequest describeStackResourcesRequest, AwsInternalConfig awsConfig) {
-    AmazonCloudFormationClient cloudFormationClient =
-        getAmazonCloudFormationClient(Regions.fromName(region), awsConfig);
-    try {
+    try (CloseableAmazonWebServiceClient<AmazonCloudFormationClient> closeableAmazonCloudFormationClient =
+             new CloseableAmazonWebServiceClient(getAmazonCloudFormationClient(Regions.fromName(region), awsConfig))) {
       tracker.trackCFCall("Describe Stack Events");
-      DescribeStackResourcesResult result = cloudFormationClient.describeStackResources(describeStackResourcesRequest);
+      DescribeStackResourcesResult result =
+          closeableAmazonCloudFormationClient.getClient().describeStackResources(describeStackResourcesRequest);
       return result.getStackResources();
     } catch (AmazonServiceException amazonServiceException) {
       awsApiHelperService.handleAmazonServiceException(amazonServiceException);
     } catch (AmazonClientException amazonClientException) {
       awsApiHelperService.handleAmazonClientException(amazonClientException);
+    } catch (Exception e) {
+      log.error("Exception retrieving StackResources", e);
+      throw new InvalidRequestException(ExceptionUtils.getMessage(e), e);
     }
     return emptyList();
   }
