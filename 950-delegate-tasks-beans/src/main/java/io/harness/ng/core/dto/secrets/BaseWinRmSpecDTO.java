@@ -7,6 +7,9 @@
 
 package io.harness.ng.core.dto.secrets;
 
+import static io.harness.annotations.dev.HarnessTeam.CDP;
+
+import io.harness.annotations.dev.OwnedBy;
 import io.harness.ng.core.models.BaseWinRmSpec;
 
 import com.fasterxml.jackson.annotation.JsonSubTypes;
@@ -21,6 +24,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
       , @JsonSubTypes.Type(value = KerberosWinRmConfigDTO.class, name = "Kerberos"),
     })
 @Schema(name = "BaseWinRmSpec", description = "This is the WinRm specification details as defined in Harness.")
+@OwnedBy(CDP)
 public interface BaseWinRmSpecDTO {
   BaseWinRmSpec toEntity();
 }

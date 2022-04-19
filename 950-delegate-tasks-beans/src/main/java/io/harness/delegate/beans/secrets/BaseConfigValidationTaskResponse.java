@@ -7,6 +7,9 @@
 
 package io.harness.delegate.beans.secrets;
 
+import static io.harness.annotations.dev.HarnessTeam.CDP;
+
+import io.harness.annotations.dev.OwnedBy;
 import io.harness.delegate.beans.DelegateMetaInfo;
 import io.harness.delegate.beans.DelegateTaskNotifyResponseData;
 import io.harness.eraro.ErrorCode;
@@ -14,6 +17,7 @@ import io.harness.eraro.ErrorCode;
 import lombok.Data;
 import lombok.experimental.SuperBuilder;
 
+@OwnedBy(CDP)
 @Data
 @SuperBuilder
 public class BaseConfigValidationTaskResponse implements DelegateTaskNotifyResponseData {

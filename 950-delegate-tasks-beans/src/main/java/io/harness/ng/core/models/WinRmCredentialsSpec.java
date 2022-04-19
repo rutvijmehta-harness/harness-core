@@ -7,6 +7,9 @@
 
 package io.harness.ng.core.models;
 
+import static io.harness.annotations.dev.HarnessTeam.CDP;
+
+import io.harness.annotations.dev.OwnedBy;
 import io.harness.ng.core.dto.secrets.SecretSpecDTO;
 import io.harness.ng.core.dto.secrets.WinRmCredentialsSpecDTO;
 
@@ -20,6 +23,7 @@ import lombok.EqualsAndHashCode;
 @Builder
 @EqualsAndHashCode(callSuper = true)
 @JsonTypeName("WinRmCredentials")
+@OwnedBy(CDP)
 public class WinRmCredentialsSpec extends SecretSpec {
   int port;
   WinRmAuth auth;

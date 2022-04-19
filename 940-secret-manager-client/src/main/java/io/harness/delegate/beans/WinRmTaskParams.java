@@ -7,6 +7,9 @@
 
 package io.harness.delegate.beans;
 
+import static io.harness.annotations.dev.HarnessTeam.CDP;
+
+import io.harness.annotations.dev.OwnedBy;
 import io.harness.delegate.beans.executioncapability.ExecutionCapability;
 import io.harness.delegate.beans.executioncapability.ExecutionCapabilityDemander;
 import io.harness.delegate.beans.executioncapability.SocketConnectivityExecutionCapability;
@@ -20,6 +23,7 @@ import java.util.List;
 import lombok.Builder;
 import lombok.Value;
 
+@OwnedBy(CDP)
 @Value
 @Builder
 public class WinRmTaskParams implements TaskParameters, ExecutionCapabilityDemander {

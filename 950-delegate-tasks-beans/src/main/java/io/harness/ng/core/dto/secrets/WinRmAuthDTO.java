@@ -7,6 +7,9 @@
 
 package io.harness.ng.core.dto.secrets;
 
+import static io.harness.annotations.dev.HarnessTeam.CDP;
+
+import io.harness.annotations.dev.OwnedBy;
 import io.harness.ng.core.models.WinRmAuth;
 import io.harness.secretmanagerclient.WinRmAuthScheme;
 
@@ -22,6 +25,7 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @Schema(name = "WinRmAuth", description = "This is the WinRm Authentication specification defined in Harness.")
+@OwnedBy(CDP)
 public class WinRmAuthDTO {
   @JsonProperty("type")
   @NotNull

@@ -7,6 +7,9 @@
 
 package io.harness.ng.core.dto.secrets;
 
+import static io.harness.annotations.dev.HarnessTeam.CDP;
+
+import io.harness.annotations.dev.OwnedBy;
 import io.harness.ng.core.models.BaseSSHSpec;
 import io.harness.ng.core.models.KerberosConfig;
 
@@ -27,6 +30,7 @@ import lombok.experimental.SuperBuilder;
 @JsonTypeName("Kerberos")
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(Include.NON_NULL)
+@OwnedBy(CDP)
 public class KerberosConfigDTO extends KerberosBaseConfigDTO implements BaseSSHSpecDTO {
   @Override
   public BaseSSHSpec toEntity() {

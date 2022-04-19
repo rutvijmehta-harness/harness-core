@@ -7,6 +7,10 @@
 
 package io.harness.ng.core.dto.secrets;
 
+import static io.harness.annotations.dev.HarnessTeam.CDP;
+
+import io.harness.annotations.dev.OwnedBy;
+
 import com.fasterxml.jackson.annotation.JsonTypeId;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -20,6 +24,7 @@ import lombok.experimental.SuperBuilder;
 @NoArgsConstructor
 @SuperBuilder
 @Schema(name = "KerberosConfig", description = "This is the Kerberos configuration details, defined in Harness.")
+@OwnedBy(CDP)
 public class KerberosBaseConfigDTO {
   @Schema(description = "This is the authorization role, the user/service has in the realm.")
   @NotNull

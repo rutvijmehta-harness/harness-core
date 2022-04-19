@@ -7,6 +7,9 @@
 
 package io.harness.ng.core.dto.secrets;
 
+import static io.harness.annotations.dev.HarnessTeam.CDP;
+
+import io.harness.annotations.dev.OwnedBy;
 import io.harness.ng.core.models.SecretSpec;
 import io.harness.ng.core.models.WinRmCredentialsSpec;
 
@@ -27,6 +30,7 @@ import lombok.NoArgsConstructor;
 @JsonTypeName("WinRmCredentials")
 @JsonIgnoreProperties(ignoreUnknown = true)
 @Schema(name = "WinRmCredentialsSpec", description = "This is the WinRm authentication details defined in Harness.")
+@OwnedBy(CDP)
 public class WinRmCredentialsSpecDTO extends SecretSpecDTO {
   @Schema(description = "WinRm port") int port;
   @NotNull WinRmAuthDTO auth;

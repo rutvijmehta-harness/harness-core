@@ -7,6 +7,9 @@
 
 package io.harness.ng.core.models;
 
+import static io.harness.annotations.dev.HarnessTeam.CDP;
+
+import io.harness.annotations.dev.OwnedBy;
 import io.harness.encryption.SecretRefData;
 import io.harness.ng.core.dto.secrets.BaseWinRmSpecDTO;
 import io.harness.ng.core.dto.secrets.NTLMConfigDTO;
@@ -18,6 +21,7 @@ import lombok.Data;
 @Data
 @Builder
 @JsonTypeName("NTLM")
+@OwnedBy(CDP)
 public class NTLMConfig implements BaseWinRmSpec {
   private String domain;
   private String username;

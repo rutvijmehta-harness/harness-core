@@ -7,7 +7,7 @@
 
 package io.harness.ng.core.remote;
 
-import static io.harness.annotations.dev.HarnessTeam.PL;
+import static io.harness.annotations.dev.HarnessTeam.CDP;
 
 import io.harness.annotations.dev.OwnedBy;
 
@@ -17,7 +17,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
-@OwnedBy(PL)
+@OwnedBy(CDP)
 @Data
 @Builder
 @EqualsAndHashCode(callSuper = true)

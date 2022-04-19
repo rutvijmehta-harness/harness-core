@@ -7,6 +7,9 @@
 
 package io.harness.ng.core.models;
 
+import static io.harness.annotations.dev.HarnessTeam.CDP;
+
+import io.harness.annotations.dev.OwnedBy;
 import io.harness.ng.core.dto.secrets.BaseSSHSpecDTO;
 import io.harness.ng.core.dto.secrets.SSHConfigDTO;
 import io.harness.ng.core.dto.secrets.SSHCredentialType;
@@ -19,6 +22,7 @@ import lombok.Data;
 @Data
 @Builder
 @JsonTypeName("SSH")
+@OwnedBy(CDP)
 public class SSHConfig implements BaseSSHSpec {
   private SSHCredentialType credentialType;
 
