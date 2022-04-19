@@ -183,8 +183,6 @@ public class PerpetualTaskRecordHandler implements PerpetualTaskCrudObserver {
         ignoredOnPurpose(exception);
         perpetualTaskService.updateTaskUnassignedReason(
             taskId, PerpetualTaskUnassignedReason.NO_ELIGIBLE_DELEGATES, taskRecord.getAssignTryCount());
-      } catch (WingsException exception) {
-        ExceptionLogger.logProcessedMessages(exception, MANAGER, log);
       } catch (Exception e) {
         log.error("Failed to assign any Delegate to perpetual task {} ", taskId, e);
       }
