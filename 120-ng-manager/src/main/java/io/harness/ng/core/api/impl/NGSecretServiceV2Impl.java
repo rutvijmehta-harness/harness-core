@@ -124,15 +124,19 @@ public class NGSecretServiceV2Impl implements NGSecretServiceV2 {
   public boolean delete(
       @NotNull String accountIdentifier, String orgIdentifier, String projectIdentifier, @NotNull String identifier) {
     Optional<Secret> secretV2Optional = get(accountIdentifier, orgIdentifier, projectIdentifier, identifier);
-    if (secretV2Optional.isPresent()) {
-      return Failsafe.with(transactionRetryPolicy).get(() -> transactionTemplate.execute(status -> {
-        secretRepository.delete(secretV2Optional.get());
-        deleteSecretActivities(accountIdentifier, orgIdentifier, projectIdentifier, identifier);
-        outboxService.save(new SecretDeleteEvent(accountIdentifier, secretV2Optional.get().toDTO()));
-        return true;
-      }));
+
+    if (!secretV2Optional.isPresent()) {
+      return false;
     }
-    return false;
+
+    Secret secret = secretV2Optional.get();
+
+    return Failsafe.with(transactionRetryPolicy).get(() -> transactionTemplate.execute(status -> {
+      secretRepository.delete(secret);
+      deleteSecretActivities(accountIdentifier, orgIdentifier, projectIdentifier, identifier);
+      outboxService.save(new SecretDeleteEvent(accountIdentifier, secret.toDTO()));
+      return true;
+    }));
   }
 
   private void deleteSecretActivities(

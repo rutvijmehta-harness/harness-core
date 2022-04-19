@@ -72,7 +72,6 @@ import org.springframework.transaction.support.TransactionTemplate;
 @OwnedBy(PL)
 public class NGSecretServiceV2ImplTest extends CategoryTest {
   private SecretRepository secretRepository;
-  private SshKeySpecDTOHelper sshKeySpecDTOHelper;
   private DelegateGrpcClientWrapper delegateGrpcClientWrapper;
   private NGSecretServiceV2Impl secretServiceV2;
   private NGSecretServiceV2Impl secretServiceV2Spy;
@@ -80,18 +79,18 @@ public class NGSecretServiceV2ImplTest extends CategoryTest {
   private OutboxService outboxService;
   private TaskSetupAbstractionHelper taskSetupAbstractionHelper;
   private TransactionTemplate transactionTemplate;
-  private WinRmCredentialsSpecDTOHelper winRmCredentialsSpecDTOHelper;
 
   @Before
   public void setup() {
     secretRepository = mock(SecretRepository.class);
     delegateGrpcClientWrapper = mock(DelegateGrpcClientWrapper.class);
-    sshKeySpecDTOHelper = mock(SshKeySpecDTOHelper.class);
     ngSecretActivityService = mock(NGSecretActivityService.class);
     outboxService = mock(OutboxService.class);
     transactionTemplate = mock(TransactionTemplate.class);
     taskSetupAbstractionHelper = new TaskSetupAbstractionHelper();
-    winRmCredentialsSpecDTOHelper = mock(WinRmCredentialsSpecDTOHelper.class);
+
+    SshKeySpecDTOHelper sshKeySpecDTOHelper = mock(SshKeySpecDTOHelper.class);
+    WinRmCredentialsSpecDTOHelper winRmCredentialsSpecDTOHelper = mock(WinRmCredentialsSpecDTOHelper.class);
 
     secretServiceV2 = new NGSecretServiceV2Impl(secretRepository, delegateGrpcClientWrapper, sshKeySpecDTOHelper,
         ngSecretActivityService, outboxService, transactionTemplate, taskSetupAbstractionHelper,
