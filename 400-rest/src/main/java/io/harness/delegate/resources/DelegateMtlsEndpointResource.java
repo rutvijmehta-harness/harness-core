@@ -7,6 +7,7 @@
 
 package io.harness.delegate.resources;
 
+import static io.harness.eraro.ErrorCode.USER_NOT_AUTHORIZED;
 import static io.harness.exception.WingsException.USER;
 import static io.harness.logging.AutoLogContext.OverrideBehavior.OVERRIDE_ERROR;
 
@@ -18,8 +19,11 @@ import io.harness.annotations.dev.OwnedBy;
 import io.harness.delegate.beans.DelegateMtlsEndpointDetails;
 import io.harness.delegate.beans.DelegateMtlsEndpointRequest;
 import io.harness.delegate.utils.DelegateMtlsApiConstants;
+import io.harness.eraro.ErrorCode;
+import io.harness.exception.AccessDeniedException;
 import io.harness.exception.InvalidRequestException;
 import io.harness.exception.UnauthorizedException;
+import io.harness.exception.WingsException;
 import io.harness.logging.AccountLogContext;
 import io.harness.logging.AutoLogContext;
 import io.harness.rest.RestResponse;
@@ -80,7 +84,8 @@ public class DelegateMtlsEndpointResource {
   @Path(DelegateMtlsApiConstants.API_PATH_ENDPOINT)
   @Timed
   @ExceptionMetered
-  @AuthRule(permissionType = ACCOUNT_MANAGEMENT)
+  //  @AuthRule(permissionType = ACCOUNT_MANAGEMENT)
+  @AuthRule(skipAuth = true)
   @ApiOperation(nickname = DelegateMtlsApiConstants.API_OPERATION_ENDPOINT_CREATE_NAME,
       value = DelegateMtlsApiConstants.API_OPERATION_ENDPOINT_CREATE_DESC)
   public RestResponse<DelegateMtlsEndpointDetails>
@@ -98,7 +103,8 @@ public class DelegateMtlsEndpointResource {
   @Path(DelegateMtlsApiConstants.API_PATH_ENDPOINT)
   @Timed
   @ExceptionMetered
-  @AuthRule(permissionType = ACCOUNT_MANAGEMENT)
+  //  @AuthRule(permissionType = ACCOUNT_MANAGEMENT)
+  @AuthRule(skipAuth = true)
   @ApiOperation(nickname = DelegateMtlsApiConstants.API_OPERATION_ENDPOINT_UPDATE_NAME,
       value = DelegateMtlsApiConstants.API_OPERATION_ENDPOINT_UPDATE_DESC)
   public RestResponse<DelegateMtlsEndpointDetails>
@@ -116,7 +122,8 @@ public class DelegateMtlsEndpointResource {
   @Path(DelegateMtlsApiConstants.API_PATH_ENDPOINT)
   @Timed
   @ExceptionMetered
-  @AuthRule(permissionType = ACCOUNT_MANAGEMENT)
+  //  @AuthRule(permissionType = ACCOUNT_MANAGEMENT)
+  @AuthRule(skipAuth = true)
   @ApiOperation(nickname = DelegateMtlsApiConstants.API_OPERATION_ENDPOINT_PATCH_NAME,
       value = DelegateMtlsApiConstants.API_OPERATION_ENDPOINT_PATCH_DESC)
   public RestResponse<DelegateMtlsEndpointDetails>
@@ -134,7 +141,8 @@ public class DelegateMtlsEndpointResource {
   @Path(DelegateMtlsApiConstants.API_PATH_ENDPOINT)
   @Timed
   @ExceptionMetered
-  @AuthRule(permissionType = ACCOUNT_MANAGEMENT)
+  //  @AuthRule(permissionType = ACCOUNT_MANAGEMENT)
+  @AuthRule(skipAuth = true)
   @ApiOperation(nickname = DelegateMtlsApiConstants.API_OPERATION_ENDPOINT_DELETE_NAME,
       value = DelegateMtlsApiConstants.API_OPERATION_ENDPOINT_DELETE_DESC)
   public RestResponse<Boolean>
@@ -150,7 +158,8 @@ public class DelegateMtlsEndpointResource {
   @Path(DelegateMtlsApiConstants.API_PATH_ENDPOINT)
   @Timed
   @ExceptionMetered
-  @AuthRule(permissionType = ACCOUNT_MANAGEMENT)
+  //  @AuthRule(permissionType = ACCOUNT_MANAGEMENT)
+  @AuthRule(skipAuth = true)
   @ApiOperation(nickname = DelegateMtlsApiConstants.API_OPERATION_ENDPOINT_GET_NAME,
       value = DelegateMtlsApiConstants.API_OPERATION_ENDPOINT_GET_DESC)
   public RestResponse<DelegateMtlsEndpointDetails>
@@ -190,7 +199,8 @@ public class DelegateMtlsEndpointResource {
     }
 
     if (!this.harnessUserGroupService.isHarnessSupportUser(user.getUuid())) {
-      throw new UnauthorizedException("Only Harness Support Group Users can access this endpoint.", USER);
+      throw new AccessDeniedException(
+          "Only Harness Support Group Users can access this endpoint.", ErrorCode.ACCESS_DENIED, WingsException.USER);
     }
   }
 }

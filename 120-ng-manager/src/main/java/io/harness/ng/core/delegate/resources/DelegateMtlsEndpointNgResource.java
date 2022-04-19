@@ -105,7 +105,7 @@ public class DelegateMtlsEndpointNgResource {
   @Path(DelegateMtlsApiConstants.API_PATH_ENDPOINT)
   @Timed
   @ExceptionMetered
-  @NGAccessControlCheck(resourceType = ResourceTypes.ACCOUNT, permission = EDIT_ACCOUNT_PERMISSION)
+  //  @NGAccessControlCheck(resourceType = ResourceTypes.ACCOUNT, permission = EDIT_ACCOUNT_PERMISSION)
   @ApiOperation(nickname = DelegateMtlsApiConstants.API_OPERATION_ENDPOINT_CREATE_NAME,
       value = DelegateMtlsApiConstants.API_OPERATION_ENDPOINT_CREATE_DESC)
   @Operation(operationId = DelegateMtlsApiConstants.API_OPERATION_ENDPOINT_CREATE_NAME,
@@ -134,7 +134,7 @@ public class DelegateMtlsEndpointNgResource {
   @Path(DelegateMtlsApiConstants.API_PATH_ENDPOINT)
   @Timed
   @ExceptionMetered
-  @NGAccessControlCheck(resourceType = ResourceTypes.ACCOUNT, permission = EDIT_ACCOUNT_PERMISSION)
+  //  @NGAccessControlCheck(resourceType = ResourceTypes.ACCOUNT, permission = EDIT_ACCOUNT_PERMISSION)
   @ApiOperation(nickname = DelegateMtlsApiConstants.API_OPERATION_ENDPOINT_UPDATE_NAME,
       value = DelegateMtlsApiConstants.API_OPERATION_ENDPOINT_UPDATE_DESC)
   @Operation(operationId = DelegateMtlsApiConstants.API_OPERATION_ENDPOINT_UPDATE_NAME,
@@ -163,7 +163,7 @@ public class DelegateMtlsEndpointNgResource {
   @Path(DelegateMtlsApiConstants.API_PATH_ENDPOINT)
   @Timed
   @ExceptionMetered
-  @NGAccessControlCheck(resourceType = ResourceTypes.ACCOUNT, permission = EDIT_ACCOUNT_PERMISSION)
+  //  @NGAccessControlCheck(resourceType = ResourceTypes.ACCOUNT, permission = EDIT_ACCOUNT_PERMISSION)
   @ApiOperation(nickname = DelegateMtlsApiConstants.API_OPERATION_ENDPOINT_PATCH_NAME,
       value = DelegateMtlsApiConstants.API_OPERATION_ENDPOINT_PATCH_DESC)
   @Operation(operationId = DelegateMtlsApiConstants.API_OPERATION_ENDPOINT_PATCH_NAME,
@@ -191,7 +191,7 @@ public class DelegateMtlsEndpointNgResource {
   @Path(DelegateMtlsApiConstants.API_PATH_ENDPOINT)
   @Timed
   @ExceptionMetered
-  @NGAccessControlCheck(resourceType = ResourceTypes.ACCOUNT, permission = EDIT_ACCOUNT_PERMISSION)
+  //  @NGAccessControlCheck(resourceType = ResourceTypes.ACCOUNT, permission = EDIT_ACCOUNT_PERMISSION)
   @ApiOperation(nickname = DelegateMtlsApiConstants.API_OPERATION_ENDPOINT_DELETE_NAME,
       value = DelegateMtlsApiConstants.API_OPERATION_ENDPOINT_DELETE_DESC)
   @Operation(operationId = DelegateMtlsApiConstants.API_OPERATION_ENDPOINT_DELETE_NAME,
@@ -216,7 +216,7 @@ public class DelegateMtlsEndpointNgResource {
   @Path(DelegateMtlsApiConstants.API_PATH_ENDPOINT)
   @Timed
   @ExceptionMetered
-  @NGAccessControlCheck(resourceType = ResourceTypes.ACCOUNT, permission = VIEW_ACCOUNT_PERMISSION)
+  //  @NGAccessControlCheck(resourceType = ResourceTypes.ACCOUNT, permission = VIEW_ACCOUNT_PERMISSION)
   @ApiOperation(nickname = DelegateMtlsApiConstants.API_OPERATION_ENDPOINT_GET_NAME,
       value = DelegateMtlsApiConstants.API_OPERATION_ENDPOINT_GET_DESC)
   @Operation(operationId = DelegateMtlsApiConstants.API_OPERATION_ENDPOINT_GET_NAME,

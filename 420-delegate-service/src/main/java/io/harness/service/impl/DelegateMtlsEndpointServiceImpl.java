@@ -101,11 +101,8 @@ public class DelegateMtlsEndpointServiceImpl implements DelegateMtlsEndpointServ
             .set(DelegateMtlsEndpointKeys.mode, endpointRequest.getMode());
 
     // only update (no insert) and return the resulting endpoint.
-    FindAndModifyOptions options = new FindAndModifyOptions();
-    options.upsert(false);
-    options.returnNew(true);
-
-    DelegateMtlsEndpoint updatedEndpoint = persistence.findAndModify(query, updateOperations, options);
+    DelegateMtlsEndpoint updatedEndpoint =
+        persistence.findAndModify(query, updateOperations, HPersistence.returnNewOptions);
 
     if (updatedEndpoint == null) {
       throw new EntityNotFoundException(String.format(ERROR_ENDPOINT_FOR_ACCOUNT_NOT_FOUND_FORMAT, accountId));
@@ -162,11 +159,8 @@ public class DelegateMtlsEndpointServiceImpl implements DelegateMtlsEndpointServ
     }
 
     // only update (no insert) and return the full resulting endpoint.
-    FindAndModifyOptions options = new FindAndModifyOptions();
-    options.upsert(false);
-    options.returnNew(true);
-
-    DelegateMtlsEndpoint updatedEndpoint = persistence.findAndModify(query, updateOperations, options);
+    DelegateMtlsEndpoint updatedEndpoint =
+        persistence.findAndModify(query, updateOperations, HPersistence.returnNewOptions);
 
     if (updatedEndpoint == null) {
       throw new EntityNotFoundException(String.format(ERROR_ENDPOINT_FOR_ACCOUNT_NOT_FOUND_FORMAT, accountId));
