@@ -11,20 +11,18 @@ import static io.harness.annotations.dev.HarnessTeam.CDC;
 
 import io.harness.annotation.RecasterAlias;
 import io.harness.annotations.dev.OwnedBy;
-import io.harness.jira.JiraIssueNG;
 import io.harness.pms.sdk.core.data.Outcome;
-import io.harness.servicenow.ServiceNowTicketNG;
 
 import com.fasterxml.jackson.annotation.JsonTypeName;
-import java.util.HashMap;
+import lombok.AllArgsConstructor;
 import org.springframework.data.annotation.TypeAlias;
 
 @OwnedBy(CDC)
 @JsonTypeName("ServiceNowTicketOutcome")
 @TypeAlias("ServiceNowTicketOutcome")
 @RecasterAlias("io.harness.steps.servicenow.ServiceNowTicketOutcome")
-public class ServiceNowTicketOutcome extends HashMap<String, Object> implements Outcome {
-  public ServiceNowTicketOutcome(ServiceNowTicketNG issue) {
-    super(issue.getFields());
-  }
+@AllArgsConstructor
+public class ServiceNowTicketOutcome implements Outcome {
+  String ticketUrl;
+  String ticketNumber;
 }

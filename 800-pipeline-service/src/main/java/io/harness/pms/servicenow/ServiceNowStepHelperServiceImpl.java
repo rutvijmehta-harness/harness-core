@@ -110,7 +110,8 @@ public class ServiceNowStepHelperServiceImpl implements ServiceNowStepHelperServ
         .status(Status.SUCCEEDED)
         .stepOutcome(StepResponse.StepOutcome.builder()
                          .name("ticket")
-                         .outcome(new ServiceNowTicketOutcome(taskResponse.getTicket()))
+                         .outcome(new ServiceNowTicketOutcome(
+                             taskResponse.getTicket().getUrl(), taskResponse.getTicket().getNumber()))
                          .build())
         .build();
   }

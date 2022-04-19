@@ -113,7 +113,7 @@ public class ServiceNowTaskNgHelper {
     });
 
     final Call<JsonNode> request = serviceNowRestClient.createTicket(Credentials.basic(userName, password),
-        serviceNowTaskNGParameters.getTicketType(), "all", "number,sys_id", body);
+        serviceNowTaskNGParameters.getTicketType().toLowerCase(), "all", "number,sys_id", body);
     Response<JsonNode> response = null;
 
     try {
@@ -124,9 +124,8 @@ public class ServiceNowTaskNgHelper {
       JsonNode responseObj = response.body().get("result");
       String ticketNumber = responseObj.get("number").get("display_value").asText();
       String ticketSysId = responseObj.get("sys_id").get("display_value").asText();
-      String ticketUrlFromTicketId =
-          ServiceNowUtils.prepareTicketUrlFromTicketNumber(serviceNowConnectorDTO.getServiceNowUrl(),
-              serviceNowTaskNGParameters.getTicketNumber(), serviceNowTaskNGParameters.getTicketType());
+      String ticketUrlFromTicketId = ServiceNowUtils.prepareTicketUrlFromTicketNumber(
+          serviceNowConnectorDTO.getServiceNowUrl(), ticketNumber, serviceNowTaskNGParameters.getTicketType());
       // todo: add field details from ticket?
       return ServiceNowTaskNGResponse.builder()
           .ticket(ServiceNowTicketNG.builder().url(ticketUrlFromTicketId).number(ticketNumber).build())
