@@ -11,7 +11,6 @@ import static io.harness.data.structure.EmptyPredicate.isEmpty;
 
 import io.harness.cf.client.api.BaseConfig;
 import io.harness.cf.client.api.CfClient;
-import io.harness.cf.client.api.Config;
 import io.harness.cf.client.connector.HarnessConfig;
 import io.harness.cf.client.connector.HarnessConnector;
 import io.harness.cf.openapi.ApiClient;
@@ -20,11 +19,7 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.google.inject.name.Named;
-import io.github.resilience4j.core.IntervalFunction;
-import io.github.resilience4j.retry.Retry;
-import io.github.resilience4j.retry.RetryConfig;
-import io.github.resilience4j.retry.RetryRegistry;
-import java.util.function.Supplier;
+
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
