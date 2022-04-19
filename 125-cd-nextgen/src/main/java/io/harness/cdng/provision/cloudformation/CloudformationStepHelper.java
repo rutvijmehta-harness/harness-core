@@ -131,10 +131,10 @@ public class CloudformationStepHelper {
   @Inject private S3UriParser s3UriParser;
   @Inject private ExecutionSweepingOutputService executionSweepingOutputService;
 
-  private static String CLOUDFORMATION_INHERIT_OUTPUT_FORMAT = "cloudformationInheritOutput_%s";
-  private static String TEMPLATE_FILE_IDENTIFIER = "templateFile";
-  private static String TAGS_FILE_IDENTIFIER = "tagsFile";
-  public static String DEFAULT_TIMEOUT = "10m";
+  private static final String CLOUDFORMATION_INHERIT_OUTPUT_FORMAT = "cloudformationInheritOutput_%s";
+  private static final String TEMPLATE_FILE_IDENTIFIER = "templateFile";
+  private static final String TAGS_FILE_IDENTIFIER = "tagsFile";
+  public static final String DEFAULT_TIMEOUT = "10m";
 
   public TaskChainResponse startChainLink(CloudformationStepExecutor cloudformationStepExecutor, Ambiance ambiance,
       StepElementParameters stepElementParameters) {
@@ -184,7 +184,8 @@ public class CloudformationStepHelper {
     }
 
     String tags = null;
-    if (stepConfiguration.getTags().getType().equals(CloudformationTagsFileTypes.Inline)) {
+    if ((stepConfiguration.getTags() != null)
+        && stepConfiguration.getTags().getType().equals(CloudformationTagsFileTypes.Inline)) {
       tags = getParameterFieldValue(
           ((InlineCloudformationTagsFileSpec) stepConfiguration.getTags().getSpec()).getContent());
     }
@@ -287,15 +288,19 @@ public class CloudformationStepHelper {
   private List<AwsS3FetchFileDelegateConfig> getAwsS3FetchFileDelegateConfigs(
       Ambiance ambiance, CloudformationCreateStackStepConfiguration stepConfiguration) {
     List<AwsS3FetchFileDelegateConfig> awsS3FetchFileDelegateConfigs = new ArrayList<>();
-    List<AwsS3FetchFileDelegateConfig> parametersS3FetchFileDelegateConfigs =
-        stepConfiguration.getParametersFilesSpecs()
-            .stream()
-            .filter(cloudformationParametersFileSpec
-                -> cloudformationParametersFileSpec.getStore().getSpec().getKind().equals(ManifestStoreType.S3URL))
-            .map(cloudformationParametersFileSpec
-                -> getParametersAwsS3FetchFileDelegateConfig(cloudformationParametersFileSpec, ambiance))
-            .collect(Collectors.toList());
-
+    List<AwsS3FetchFileDelegateConfig> parametersS3FetchFileDelegateConfigs;
+    if (isNotEmpty(stepConfiguration.getParametersFilesSpecs())) {
+      parametersS3FetchFileDelegateConfigs =
+          stepConfiguration.getParametersFilesSpecs()
+              .stream()
+              .filter(cloudformationParametersFileSpec
+                  -> cloudformationParametersFileSpec.getStore().getSpec().getKind().equals(ManifestStoreType.S3URL))
+              .map(cloudformationParametersFileSpec
+                  -> getParametersAwsS3FetchFileDelegateConfig(cloudformationParametersFileSpec, ambiance))
+              .collect(Collectors.toList());
+    } else {
+      parametersS3FetchFileDelegateConfigs = new ArrayList<>();
+    }
     if (areTagsStoredOnS3(stepConfiguration)) {
       awsS3FetchFileDelegateConfigs.add(getTagsAwsS3FetchFileDelegateConfig(
           (RemoteCloudformationTagsFileSpec) stepConfiguration.getTags().getSpec(), ambiance));
@@ -354,13 +359,15 @@ public class CloudformationStepHelper {
   }
 
   private boolean hasS3StoredParameters(CloudformationCreateStackStepConfiguration stepConfiguration) {
-    return stepConfiguration.getParametersFilesSpecs().stream().anyMatch(cloudformationParametersFileSpec
-        -> cloudformationParametersFileSpec.getStore().getSpec().getKind().equals(ManifestStoreType.S3URL));
+    return stepConfiguration.getParametersFilesSpecs() != null
+        && stepConfiguration.getParametersFilesSpecs().stream().anyMatch(cloudformationParametersFileSpec
+            -> cloudformationParametersFileSpec.getStore().getSpec().getKind().equals(ManifestStoreType.S3URL));
   }
 
   private boolean hasGitStoredParameters(CloudformationCreateStackStepConfiguration stepConfiguration) {
-    return stepConfiguration.getParametersFilesSpecs().stream().anyMatch(cloudformationParametersFileSpec
-        -> ManifestStoreType.isInGitSubset(cloudformationParametersFileSpec.getStore().getSpec().getKind()));
+    return stepConfiguration.getParametersFilesSpecs() != null
+        && stepConfiguration.getParametersFilesSpecs().stream().anyMatch(cloudformationParametersFileSpec
+            -> ManifestStoreType.isInGitSubset(cloudformationParametersFileSpec.getStore().getSpec().getKind()));
   }
 
   private GitFetchFilesConfig getTemplateGitFetchFileConfig(
@@ -410,7 +417,13 @@ public class CloudformationStepHelper {
         (CloudformationCreateStackStepParameters) stepElementParameters.getSpec();
     CloudformationCreateStackStepConfiguration stepConfiguration =
         cloudformationCreateStackStepParameters.getConfiguration();
-
+    List<StackStatus> stackStatuses = new ArrayList<>();
+    if (isNotEmpty(getParameterFieldValue(stepConfiguration.getSkipOnStackStatuses()))) {
+      stackStatuses = getParameterFieldValue(stepConfiguration.getSkipOnStackStatuses())
+                          .stream()
+                          .map(StackStatus::fromValue)
+                          .collect(Collectors.toList());
+    }
     return CloudformationTaskNGParameters.builder()
         .accountId(AmbianceUtils.getAccountId(ambiance))
         .taskType(CREATE_STACK)
@@ -426,10 +439,7 @@ public class CloudformationStepHelper {
         .parameters(parameters)
         .capabilities(getParameterFieldValue(stepConfiguration.getCapabilities()))
         .tags(isNotEmpty(tags) ? engineExpressionService.renderExpression(ambiance, tags) : tags)
-        .stackStatusesToMarkAsSuccess(getParameterFieldValue(stepConfiguration.getSkipOnStackStatuses())
-                                          .stream()
-                                          .map(StackStatus::fromValue)
-                                          .collect(Collectors.toList()))
+        .stackStatusesToMarkAsSuccess(stackStatuses)
         .timeoutInMs(StepUtils.getTimeoutMillis(stepElementParameters.getTimeout(), DEFAULT_TIMEOUT))
         .build();
   }
@@ -479,11 +489,12 @@ public class CloudformationStepHelper {
     }
 
     String tags = null;
-    if (isNotEmpty(cloudFormationCreateStackPassThroughData.getTags())) {
+    if (cloudFormationCreateStackPassThroughData.getTags() != null) {
       tags = cloudFormationCreateStackPassThroughData.getTags();
     } else if (isNotEmpty(responseData.getS3filesDetails().get(TAGS_FILE_IDENTIFIER))) {
       tags = responseData.getS3filesDetails().get(TAGS_FILE_IDENTIFIER).get(0).getFileContent();
-    } else if (stepConfiguration.getTags().getType().equals(CloudformationTagsFileTypes.Inline)) {
+    } else if (stepConfiguration.getTags() != null
+        && stepConfiguration.getTags().getType().equals(CloudformationTagsFileTypes.Inline)) {
       tags = getParameterFieldValue(
           ((InlineCloudformationTagsFileSpec) stepConfiguration.getTags().getSpec()).getContent());
     }
@@ -526,7 +537,8 @@ public class CloudformationStepHelper {
 
     Map<String, String> parameters = new HashMap<>();
     cloudFormationCreateStackPassThroughData.getParametersFilesContent().forEach(
-        (s, parametersFiles) -> parametersFiles.forEach(this::getParametersFromJson));
+        (s, parametersFiles)
+            -> parametersFiles.forEach(parametersFile -> parameters.putAll(getParametersFromJson(parametersFile))));
     parameters.putAll(getInlineParameters(stepConfiguration));
 
     String templateBody = null;
@@ -544,11 +556,12 @@ public class CloudformationStepHelper {
     }
 
     String tags = null;
-    if (isNotEmpty(cloudFormationCreateStackPassThroughData.getTags())) {
+    if (cloudFormationCreateStackPassThroughData.getTags() != null) {
       tags = cloudFormationCreateStackPassThroughData.getTags();
     } else if (filesFromMultipleRepo.get(TAGS_FILE_IDENTIFIER) != null) {
       tags = filesFromMultipleRepo.get(TAGS_FILE_IDENTIFIER).getFiles().get(0).getFileContent();
-    } else if (stepConfiguration.getTags().getType().equals(CloudformationTagsFileTypes.Inline)) {
+    } else if (stepConfiguration.getTags() != null
+        && stepConfiguration.getTags().getType().equals(CloudformationTagsFileTypes.Inline)) {
       tags = getParameterFieldValue(
           ((InlineCloudformationTagsFileSpec) stepConfiguration.getTags().getSpec()).getContent());
     }
