@@ -7,6 +7,7 @@
 
 package io.harness.delegate.configuration;
 
+import static com.google.common.base.Strings.isNullOrEmpty;
 import static io.harness.annotations.dev.HarnessTeam.DEL;
 import static io.harness.data.structure.EmptyPredicate.isNotEmpty;
 import static io.harness.data.structure.HarnessStringUtils.join;
@@ -25,11 +26,13 @@ import static io.harness.network.Http.getBaseUrl;
 
 import static java.lang.String.format;
 
+import com.google.common.base.Strings;
 import io.harness.annotations.dev.OwnedBy;
 
 import com.google.common.annotations.VisibleForTesting;
 import java.io.File;
 import java.io.IOException;
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Arrays;
@@ -61,6 +64,9 @@ public class InstallUtils {
   private static final String helm3VersionNew = "v3.8.0";
   static final String helm3Version = "v3.1.2";
   static final String helm2Version = "v2.13.1";
+
+  private static final String cf6Version = "v6";
+  private static final String cf7Version = "v7";
 
   private static final List<String> helmVersions = Arrays.asList(helm2Version, helm3Version, helm3VersionNew);
 
@@ -192,7 +198,8 @@ public class InstallUtils {
   public static boolean installKubectl(DelegateConfiguration configuration) {
     boolean kubectlInstalled = true;
     for (String version : kubectlVersions) {
-      kubectlInstalled = kubectlInstalled && installKubectl(configuration, version);
+      kubectlInstalled = kubectlInstalled && !isNullOrEmpty(installTool(KUBECTL, version, configuration));
+//      kubectlInstalled = kubectlInstalled && installKubectl(configuration, version);
     }
     return kubectlInstalled;
   }
@@ -271,116 +278,124 @@ public class InstallUtils {
   }
 
   public static boolean installGoTemplateTool(DelegateConfiguration configuration) {
-    try {
-      if (SystemUtils.IS_OS_WINDOWS) {
-        log.info("Skipping go-template install on Windows");
-        return true;
-      }
-
-      String goTemplateClientDirectory = GO_TEMPLATE.getBaseDir() + goTemplateClientVersion;
-
-      if (validateToolExists(goTemplateClientDirectory, GO_TEMPLATE)) {
-        goTemplateToolPath =
-            Paths.get(goTemplateClientDirectory + "/go-template").toAbsolutePath().normalize().toString();
-        log.info("go-template version {} already installed", goTemplateClientVersion);
-        return true;
-      }
-
-      log.info("Installing go-template");
-
-      createDirectoryIfDoesNotExist(goTemplateClientDirectory);
-
-      String downloadUrl = getGoTemplateDownloadUrl(configuration);
-
-      log.info("download Url is {}", downloadUrl);
-
-      String script = "curl $MANAGER_PROXY_CURL -kLO " + downloadUrl + "\n"
-          + "chmod +x ./go-template\n"
-          + "./go-template -v\n";
-
-      ProcessExecutor processExecutor = new ProcessExecutor()
-                                            .timeout(10, TimeUnit.MINUTES)
-                                            .directory(new File(goTemplateClientDirectory))
-                                            .command("/bin/bash", "-c", script)
-                                            .readOutput(true);
-      ProcessResult result = processExecutor.execute();
-
-      if (result.getExitValue() == 0) {
-        goTemplateToolPath =
-            Paths.get(goTemplateClientDirectory + "/go-template").toAbsolutePath().normalize().toString();
-        log.info(result.outputUTF8());
-        if (validateToolExists(goTemplateClientDirectory, GO_TEMPLATE)) {
-          log.info("go-template path: {}", goTemplateToolPath);
-          return true;
-        } else {
-          log.error("go-template not validated after download: {}", goTemplateToolPath);
-          return false;
-        }
-      } else {
-        log.error("go-template install failed");
-        log.error(result.outputUTF8());
-        return false;
-      }
-    } catch (Exception e) {
-      log.error("Error installing go-template", e);
-      return false;
-    }
+    return !isNullOrEmpty(installTool(GO_TEMPLATE, goTemplateClientVersion, configuration));
   }
 
-  public static boolean installHarnessPywinrm(DelegateConfiguration configuration) {
-    try {
-      if (SystemUtils.IS_OS_WINDOWS) {
-        log.info("Skipping harness-pywinrm install on Windows");
-        return true;
-      }
+//  public static boolean installGoTemplateTool(DelegateConfiguration configuration) {
+//    try {
+//      if (SystemUtils.IS_OS_WINDOWS) {
+//        log.info("Skipping go-template install on Windows");
+//        return true;
+//      }
+//
+//      String goTemplateClientDirectory = GO_TEMPLATE.getBaseDir() + goTemplateClientVersion;
+//
+//      if (validateToolExists(goTemplateClientDirectory, GO_TEMPLATE)) {
+//        goTemplateToolPath =
+//            Paths.get(goTemplateClientDirectory + "/go-template").toAbsolutePath().normalize().toString();
+//        log.info("go-template version {} already installed", goTemplateClientVersion);
+//        return true;
+//      }
+//
+//      log.info("Installing go-template");
+//
+//      createDirectoryIfDoesNotExist(goTemplateClientDirectory);
+//
+//      String downloadUrl = getGoTemplateDownloadUrl(configuration);
+//
+//      log.info("download Url is {}", downloadUrl);
+//
+//      String script = "curl $MANAGER_PROXY_CURL -kLO " + downloadUrl + "\n"
+//          + "chmod +x ./go-template\n"
+//          + "./go-template -v\n";
+//
+//      ProcessExecutor processExecutor = new ProcessExecutor()
+//                                            .timeout(10, TimeUnit.MINUTES)
+//                                            .directory(new File(goTemplateClientDirectory))
+//                                            .command("/bin/bash", "-c", script)
+//                                            .readOutput(true);
+//      ProcessResult result = processExecutor.execute();
+//
+//      if (result.getExitValue() == 0) {
+//        goTemplateToolPath =
+//            Paths.get(goTemplateClientDirectory + "/go-template").toAbsolutePath().normalize().toString();
+//        log.info(result.outputUTF8());
+//        if (validateToolExists(goTemplateClientDirectory, GO_TEMPLATE)) {
+//          log.info("go-template path: {}", goTemplateToolPath);
+//          return true;
+//        } else {
+//          log.error("go-template not validated after download: {}", goTemplateToolPath);
+//          return false;
+//        }
+//      } else {
+//        log.error("go-template install failed");
+//        log.error(result.outputUTF8());
+//        return false;
+//      }
+//    } catch (Exception e) {
+//      log.error("Error installing go-template", e);
+//      return false;
+//    }
+//  }
 
-      String harnessPywinrmClientDirectory = HARNESS_PYWINRM.getBaseDir() + harnessPywinrmVersion;
-
-      if (validateToolExists(harnessPywinrmClientDirectory, HARNESS_PYWINRM)) {
-        harnessPywinrmToolPath =
-            Paths.get(harnessPywinrmClientDirectory + "/harness-pywinrm").toAbsolutePath().normalize().toString();
-        log.info("harness-pywinrm version {} already installed", harnessPywinrmVersion);
-        return true;
-      }
-
-      log.info("Installing harness-pywinrm");
-
-      createDirectoryIfDoesNotExist(harnessPywinrmClientDirectory);
-
-      String downloadUrl = getHarnessPywinrmDownloadUrl(configuration);
-
-      log.info("download Url is {}", downloadUrl);
-
-      String script = "curl $MANAGER_PROXY_CURL -kLO " + downloadUrl + "\n"
-          + "chmod +x ./harness-pywinrm\n";
-
-      ProcessExecutor processExecutor = new ProcessExecutor()
-                                            .timeout(10, TimeUnit.MINUTES)
-                                            .directory(new File(harnessPywinrmClientDirectory))
-                                            .command("/bin/bash", "-c", script)
-                                            .readOutput(true);
-      ProcessResult result = processExecutor.execute();
-
-      if (result.getExitValue() == 0) {
-        harnessPywinrmToolPath =
-            Paths.get(harnessPywinrmClientDirectory + "/harness-pywinrm").toAbsolutePath().normalize().toString();
-        log.info(format("harness-pywinrm version: %s", result.outputUTF8()));
-        if (validateToolExists(harnessPywinrmClientDirectory, HARNESS_PYWINRM)) {
-          log.info("harness-pywinrm path: {}", harnessPywinrmToolPath);
-          return true;
-        } else {
-          log.error("harness-pywinrm not validated after download: {}", harnessPywinrmToolPath);
-          return false;
-        }
-      } else {
-        log.error("harness-pywinrm install failed\n" + result.outputUTF8());
-        return false;
-      }
-    } catch (final Exception e) {
-      log.error("Error installing harness-pywinrm", e);
-      return false;
-    }
+  public static boolean installHarnessPywinrm(final DelegateConfiguration configuration) {
+    return !isNullOrEmpty(installTool(HARNESS_PYWINRM, harnessPywinrmVersion, configuration));
   }
+
+//  public static boolean installHarnessPywinrm(DelegateConfiguration configuration) {
+//    try {
+//      if (SystemUtils.IS_OS_WINDOWS) {
+//        log.info("Skipping harness-pywinrm install on Windows");
+//        return true;
+//      }
+//
+//      String harnessPywinrmClientDirectory = HARNESS_PYWINRM.getBaseDir() + harnessPywinrmVersion;
+//
+//      if (validateToolExists(harnessPywinrmClientDirectory, HARNESS_PYWINRM)) {
+//        harnessPywinrmToolPath =
+//            Paths.get(harnessPywinrmClientDirectory + "/harness-pywinrm").toAbsolutePath().normalize().toString();
+//        log.info("harness-pywinrm version {} already installed", harnessPywinrmVersion);
+//        return true;
+//      }
+//
+//      log.info("Installing harness-pywinrm");
+//
+//      createDirectoryIfDoesNotExist(harnessPywinrmClientDirectory);
+//
+//      String downloadUrl = getHarnessPywinrmDownloadUrl(configuration);
+//
+//      log.info("download Url is {}", downloadUrl);
+//
+//      String script = "curl $MANAGER_PROXY_CURL -kLO " + downloadUrl + "\n"
+//          + "chmod +x ./harness-pywinrm\n";
+//
+//      ProcessExecutor processExecutor = new ProcessExecutor()
+//                                            .timeout(10, TimeUnit.MINUTES)
+//                                            .directory(new File(harnessPywinrmClientDirectory))
+//                                            .command("/bin/bash", "-c", script)
+//                                            .readOutput(true);
+//      ProcessResult result = processExecutor.execute();
+//
+//      if (result.getExitValue() == 0) {
+//        harnessPywinrmToolPath =
+//            Paths.get(harnessPywinrmClientDirectory + "/harness-pywinrm").toAbsolutePath().normalize().toString();
+//        log.info(format("harness-pywinrm version: %s", result.outputUTF8()));
+//        if (validateToolExists(harnessPywinrmClientDirectory, HARNESS_PYWINRM)) {
+//          log.info("harness-pywinrm path: {}", harnessPywinrmToolPath);
+//          return true;
+//        } else {
+//          log.error("harness-pywinrm not validated after download: {}", harnessPywinrmToolPath);
+//          return false;
+//        }
+//      } else {
+//        log.error("harness-pywinrm install failed\n" + result.outputUTF8());
+//        return false;
+//      }
+//    } catch (final Exception e) {
+//      log.error("Error installing harness-pywinrm", e);
+//      return false;
+//    }
+//  }
 
   public static void setupDefaultPaths(DelegateConfiguration delegateConfiguration) {
     if (isNotEmpty(delegateConfiguration.getKustomizePath())) {
@@ -489,7 +504,8 @@ public class InstallUtils {
   public static boolean installHelm(DelegateConfiguration configuration) {
     boolean helmInstalled = true;
     for (String version : helmVersions) {
-      helmInstalled = helmInstalled && installHelm(configuration, version);
+      helmInstalled = helmInstalled && !isNullOrEmpty(installTool(HELM, version, configuration));
+//      helmInstalled = helmInstalled && installHelm(configuration, version);
     }
     return helmInstalled;
   }
@@ -576,7 +592,8 @@ public class InstallUtils {
   public static boolean installChartMuseum(DelegateConfiguration configuration) {
     boolean chartMuseumVersionsInstalled = true;
     for (String version : chartMuseumVersions) {
-      chartMuseumVersionsInstalled = chartMuseumVersionsInstalled && installChartMuseum(configuration, version);
+      chartMuseumVersionsInstalled = chartMuseumVersionsInstalled && !isNullOrEmpty(installTool(CHARTMUSEUM, version, configuration));
+//      chartMuseumVersionsInstalled = chartMuseumVersionsInstalled && installChartMuseum(configuration, version);
     }
     return chartMuseumVersionsInstalled;
   }
@@ -641,7 +658,8 @@ public class InstallUtils {
     boolean terraformConfigInspectInstalled = true;
     for (String version : terraformConfigInspectVersions) {
       terraformConfigInspectInstalled =
-          terraformConfigInspectInstalled && installTerraformConfigInspect(configuration, version);
+          terraformConfigInspectInstalled && !isNullOrEmpty(installTool(TERRAFORM_CONFIG_INSPECT, version, configuration));
+//          terraformConfigInspectInstalled && installTerraformConfigInspect(configuration, version);
     }
     return terraformConfigInspectInstalled;
   }
@@ -703,53 +721,57 @@ public class InstallUtils {
   }
 
   public static boolean installScm(DelegateConfiguration configuration) {
-    try {
-      if (SystemUtils.IS_OS_WINDOWS) {
-        log.info("Skipping scm install on Windows");
-        return true;
-      }
-
-      final String scmVersionedDirectory = Paths.get(getScmPath()).getParent().toString();
-      if (validateToolExists(scmVersionedDirectory, SCM)) {
-        log.info("scm already installed at {}", scmVersionedDirectory);
-        return true;
-      }
-
-      log.info("Installing scm");
-      createDirectoryIfDoesNotExist(scmVersionedDirectory);
-
-      String downloadUrl = getScmDownloadUrl(configuration);
-      log.info("Download Url is {}", downloadUrl);
-
-      String script = "curl $MANAGER_PROXY_CURL -kLO " + downloadUrl + "\n"
-          + "chmod +x ./scm";
-
-      ProcessExecutor processExecutor = new ProcessExecutor()
-                                            .timeout(10, TimeUnit.MINUTES)
-                                            .directory(new File(scmVersionedDirectory))
-                                            .command("/bin/bash", "-c", script)
-                                            .readOutput(true);
-      ProcessResult result = processExecutor.execute();
-      if (result.getExitValue() == 0) {
-        String scmPath = Paths.get(getScmPath()).toAbsolutePath().toString();
-        log.info(result.outputUTF8());
-        if (validateToolExists(scmVersionedDirectory, SCM)) {
-          log.info("scm path: {}", scmPath);
-          return true;
-        } else {
-          log.error("scm not validated after download: {}", scmPath);
-          return false;
-        }
-      } else {
-        log.error("scm install failed");
-        log.error(result.outputUTF8());
-        return false;
-      }
-    } catch (Exception e) {
-      log.error("Error installing scm", e);
-      return false;
-    }
+    return !isNullOrEmpty(installTool(SCM, getScmVersion(), configuration));
   }
+
+//  public static boolean installScm(DelegateConfiguration configuration) {
+//    try {
+//      if (SystemUtils.IS_OS_WINDOWS) {
+//        log.info("Skipping scm install on Windows");
+//        return true;
+//      }
+//
+//      final String scmVersionedDirectory = Paths.get(getScmPath()).getParent().toString();
+//      if (validateToolExists(scmVersionedDirectory, SCM)) {
+//        log.info("scm already installed at {}", scmVersionedDirectory);
+//        return true;
+//      }
+//
+//      log.info("Installing scm");
+//      createDirectoryIfDoesNotExist(scmVersionedDirectory);
+//
+//      String downloadUrl = getScmDownloadUrl(configuration);
+//      log.info("Download Url is {}", downloadUrl);
+//
+//      String script = "curl $MANAGER_PROXY_CURL -kLO " + downloadUrl + "\n"
+//          + "chmod +x ./scm";
+//
+//      ProcessExecutor processExecutor = new ProcessExecutor()
+//                                            .timeout(10, TimeUnit.MINUTES)
+//                                            .directory(new File(scmVersionedDirectory))
+//                                            .command("/bin/bash", "-c", script)
+//                                            .readOutput(true);
+//      ProcessResult result = processExecutor.execute();
+//      if (result.getExitValue() == 0) {
+//        String scmPath = Paths.get(getScmPath()).toAbsolutePath().toString();
+//        log.info(result.outputUTF8());
+//        if (validateToolExists(scmVersionedDirectory, SCM)) {
+//          log.info("scm path: {}", scmPath);
+//          return true;
+//        } else {
+//          log.error("scm not validated after download: {}", scmPath);
+//          return false;
+//        }
+//      } else {
+//        log.error("scm install failed");
+//        log.error(result.outputUTF8());
+//        return false;
+//      }
+//    } catch (Exception e) {
+//      log.error("Error installing scm", e);
+//      return false;
+//    }
+//  }
 
   public static String getScmVersion() {
     String version = System.getenv().get("SCM_VERSION");
@@ -770,69 +792,174 @@ public class InstallUtils {
         + scmVersion + "/bin/" + getOsPath() + "/amd64/" + SCM.getBinaryName();
   }
 
-  public static boolean installOc(DelegateConfiguration configuration) {
+  private static String installTool(final ClientTool tool, final String version, final DelegateConfiguration configuration) {
+    // 1. Check if custom path is configured for a tool (assume it's installed there)
+    final String customPath = getCustomPath(configuration, tool, version);
+    if (!isNullOrEmpty(customPath)) {
+      log.info("User configured custom path for {} at {}. Skipping Install.", tool.getBinaryName(), customPath);
+      return customPath;
+    }
+    // 2. Check if tool is already installed
+    final String versionedDirectory = getVersionedDirectory(tool, version);
+    if (validateToolExists(versionedDirectory, tool)) {
+      log.info("{} already installed at {}", tool.getBinaryName(), versionedDirectory);
+      return versionedDirectory;
+    }
+
+    // 3. Download the tool
     try {
-      if (StringUtils.isNotEmpty(configuration.getOcPath())) {
-        ocPath = configuration.getOcPath();
-        log.info("Found user configured oc at {}. Skipping Install.", ocPath);
-        return true;
-      }
+      log.info("{} not found at {}. Installing.", tool.getBinaryName(), versionedDirectory);
+      createDirectoryIfDoesNotExist(versionedDirectory);
 
-      if (SystemUtils.IS_OS_WINDOWS) {
-        log.info("Skipping oc install on Windows");
-        return true;
-      }
+      final String downloadUrl = getDownloadUrl(tool, version, configuration);
+      log.info("{} download url is {}", tool.getBinaryName(), downloadUrl);
+      final String permissionsCommand = "chmod +x " + tool.getBinaryName(); // TODO: make maybe ./binaryName
+      final String validateCommand = tool.getValidateCommand();
+      final String initCommand = getInitCommand(tool, version);
 
-      String version = System.getenv().get("OC_VERSION");
-      if (StringUtils.isEmpty(version)) {
-        version = ocVersion;
-        log.info("No version configured. Using default oc version {}", version);
-      }
+      final String script = "curl $MANAGER_PROXY_CURL -kLO " + downloadUrl + "\n" +
+              permissionsCommand + "\n" +
+              validateCommand + "\n" + // Remove
+              initCommand; // Separate
 
-      String ocDirectory = OC.getBaseDir() + version;
-      if (validateToolExists(ocDirectory, OC)) {
-        ocPath = Paths.get(ocDirectory, "oc").toAbsolutePath().normalize().toString();
-        log.info("oc version {} already installed", version);
-        return true;
-      }
-
-      log.info("Installing oc");
-      createDirectoryIfDoesNotExist(ocDirectory);
-
-      String downloadUrl = getOcDownloadUrl(configuration, version);
-      log.info("download url is {}", downloadUrl);
-
-      String script = "curl $MANAGER_PROXY_CURL -kLO " + downloadUrl + "\n"
-          + "chmod +x ./oc\n"
-          + "./oc version --client\n";
-
-      ProcessExecutor processExecutor = new ProcessExecutor()
-                                            .timeout(10, TimeUnit.MINUTES)
-                                            .directory(new File(ocDirectory))
-                                            .command("/bin/bash", "-c", script)
-                                            .readOutput(true);
-      ProcessResult result = processExecutor.execute();
-
-      if (result.getExitValue() == 0) {
-        ocPath = Paths.get(ocDirectory, "oc").toAbsolutePath().normalize().toString();
-        log.info(result.outputUTF8());
-        if (validateToolExists(ocDirectory, OC)) {
-          log.info("oc path: {}", ocPath);
-          return true;
+      final boolean isInstalled = runCommand(versionedDirectory, script);
+      if (isInstalled) {
+        if (validateToolExists(versionedDirectory, tool)) {
+          log.info("{} successfully installed to {}", tool.getBinaryName(), versionedDirectory);
+          return versionedDirectory;
         } else {
-          log.error("oc not validated after download: {}", ocPath);
-          return false;
+          log.error("{} not validated after download {}", tool.getBinaryName(), versionedDirectory);
+          return "";
         }
       } else {
-        log.error("oc install failed");
-        log.error(result.outputUTF8());
-        return false;
+        log.error("Failed installing {} to {}", tool.getBinaryName(), versionedDirectory);
+        return "";
       }
-    } catch (Exception e) {
-      log.error("Error installing oc", e);
-      return false;
+    } catch (final Exception e) {
+      log.error("Exception installing " + tool.getBinaryName(), e);
+      return "";
     }
   }
+
+  private static String getVersionedDirectory(final ClientTool tool, final String version) {
+    return Paths.get(tool.getBaseDir(), version, tool.getBinaryName()).toAbsolutePath().normalize().toString();
+  }
+
+  private static String getDownloadUrl(final ClientTool tool, final String version, final DelegateConfiguration configuration) {
+    if (configuration.isUseCdn()) {
+      return join("/", configuration.getCdnUrl(), String.format(tool.getCdnPath(), version, getOsPath()));
+    }
+    return getManagerBaseUrl(configuration.getManagerUrl()) + String.format(tool.getOnPremPath(), version, getOsPath());
+  }
+
+  private static String getCustomPath(final DelegateConfiguration configuration, final ClientTool tool, final String version) {
+    switch (tool) {
+      case CF:
+        return cf6Version.equals(version) ? configuration.getCfCli6Path() : configuration.getCfCli7Path();
+      case HELM:
+        return helm2Version.equals(version) ? configuration.getHelmPath() : configuration.getHelm3Path();
+      case KUBECTL: return configuration.getKubectlPath();
+      case KUSTOMIZE: return configuration.getKustomizePath();
+      case OC: return configuration.getOcPath();
+      case SCM:
+      case TERRAFORM_CONFIG_INSPECT:
+      case GO_TEMPLATE:
+      case HARNESS_PYWINRM:
+      case CHARTMUSEUM:
+        return "";
+      default: throw new IllegalArgumentException("Unknown tool: " + tool);
+    }
+  }
+
+  private static String getInitCommand(final ClientTool tool, final String version) {
+    switch (tool) {
+      case HELM: return getHelmInitCommand(version);
+      case CF:
+      case KUBECTL:
+      case KUSTOMIZE:
+      case OC:
+      case SCM:
+      case TERRAFORM_CONFIG_INSPECT:
+      case GO_TEMPLATE:
+      case HARNESS_PYWINRM:
+      case CHARTMUSEUM:
+        return "";
+      default: throw new IllegalArgumentException("Unknown tool: " + tool);
+    }
+  }
+
+  public static boolean installOc(final DelegateConfiguration configuration) {
+    String version = System.getenv().get("OC_VERSION");
+    if (StringUtils.isEmpty(version)) {
+      version = ocVersion;
+      log.info("No version configured. Using default oc version {}", version);
+    }
+    return !isNullOrEmpty(installTool(OC, version, configuration));
+  }
+
+//  public static boolean installOc(DelegateConfiguration configuration) {
+//    try {
+//      if (StringUtils.isNotEmpty(configuration.getOcPath())) {
+//        ocPath = configuration.getOcPath();
+//        log.info("Found user configured oc at {}. Skipping Install.", ocPath);
+//        return true;
+//      }
+//
+//      if (SystemUtils.IS_OS_WINDOWS) {
+//        log.info("Skipping oc install on Windows");
+//        return true;
+//      }
+//
+//      String version = System.getenv().get("OC_VERSION");
+//      if (StringUtils.isEmpty(version)) {
+//        version = ocVersion;
+//        log.info("No version configured. Using default oc version {}", version);
+//      }
+//
+//      String ocDirectory = OC.getBaseDir() + version;
+//      if (validateToolExists(ocDirectory, OC)) {
+//        ocPath = Paths.get(ocDirectory, "oc").toAbsolutePath().normalize().toString();
+//        log.info("oc version {} already installed", version);
+//        return true;
+//      }
+//
+//      log.info("Installing oc");
+//      createDirectoryIfDoesNotExist(ocDirectory);
+//
+//      String downloadUrl = getOcDownloadUrl(configuration, version);
+//      log.info("download url is {}", downloadUrl);
+//
+//      String script = "curl $MANAGER_PROXY_CURL -kLO " + downloadUrl + "\n"
+//          + "chmod +x ./oc\n"
+//          + "./oc version --client\n";
+//
+//      ProcessExecutor processExecutor = new ProcessExecutor()
+//                                            .timeout(10, TimeUnit.MINUTES)
+//                                            .directory(new File(ocDirectory))
+//                                            .command("/bin/bash", "-c", script)
+//                                            .readOutput(true);
+//      ProcessResult result = processExecutor.execute();
+//
+//      if (result.getExitValue() == 0) {
+//        ocPath = Paths.get(ocDirectory, "oc").toAbsolutePath().normalize().toString();
+//        log.info(result.outputUTF8());
+//        if (validateToolExists(ocDirectory, OC)) {
+//          log.info("oc path: {}", ocPath);
+//          return true;
+//        } else {
+//          log.error("oc not validated after download: {}", ocPath);
+//          return false;
+//        }
+//      } else {
+//        log.error("oc install failed");
+//        log.error(result.outputUTF8());
+//        return false;
+//      }
+//    } catch (Exception e) {
+//      log.error("Error installing oc", e);
+//      return false;
+//    }
+//  }
 
   private static String getOcDownloadUrl(DelegateConfiguration delegateConfiguration, String version) {
     if (delegateConfiguration.isUseCdn()) {
@@ -845,7 +972,8 @@ public class InstallUtils {
   public static boolean installKustomize(DelegateConfiguration configuration) {
     boolean kustomizeInstalled = true;
     for (String version : kustomizeVersions) {
-      kustomizeInstalled = kustomizeInstalled && installKustomize(configuration, version);
+//      kustomizeInstalled = kustomizeInstalled && installKustomize(configuration, version);
+      kustomizeInstalled = kustomizeInstalled && !isNullOrEmpty(installTool(KUSTOMIZE, version, configuration));
     }
     return kustomizeInstalled;
   }
