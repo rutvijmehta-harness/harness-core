@@ -7,11 +7,9 @@
 
 package io.harness.delegate.resources;
 
-import static io.harness.eraro.ErrorCode.USER_NOT_AUTHORIZED;
 import static io.harness.exception.WingsException.USER;
 import static io.harness.logging.AutoLogContext.OverrideBehavior.OVERRIDE_ERROR;
 
-import static software.wings.security.PermissionAttribute.PermissionType.ACCOUNT_MANAGEMENT;
 import static software.wings.security.PermissionAttribute.ResourceType.DELEGATE;
 
 import io.harness.annotations.dev.HarnessTeam;
