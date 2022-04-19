@@ -39,6 +39,8 @@ public class ResourceGroupConfigMapper {
         .tags(dto.getTags())
         .allowedScopeLevels(dto.getAllowedScopeLevels())
         .description(dto.getDescription())
+        .includedScopes(dto.getIncludedScopes())
+        .resourceFilter(dto.getResourceFilter())
         .build();
   }
 }
