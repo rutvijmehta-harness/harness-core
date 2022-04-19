@@ -7,7 +7,7 @@
 
 package io.harness.cdng.secrets.tasks;
 
-import static io.harness.annotations.dev.HarnessTeam.PL;
+import static io.harness.annotations.dev.HarnessTeam.CDP;
 
 import io.harness.annotations.dev.OwnedBy;
 import io.harness.delegate.beans.DelegateResponseData;
@@ -41,7 +41,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
 
-@OwnedBy(PL)
+@OwnedBy(CDP)
 @Slf4j
 public class WinRmConfigValidationDelegateTask extends AbstractDelegateRunnableTask {
   private static final String HOME_DIR = "%USERPROFILE%";

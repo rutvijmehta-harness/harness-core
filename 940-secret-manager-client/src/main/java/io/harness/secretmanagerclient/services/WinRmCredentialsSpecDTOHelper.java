@@ -7,8 +7,11 @@
 
 package io.harness.secretmanagerclient.services;
 
+import static io.harness.annotations.dev.HarnessTeam.CDP;
+
 import static java.util.Collections.emptyList;
 
+import io.harness.annotations.dev.OwnedBy;
 import io.harness.ng.core.NGAccess;
 import io.harness.ng.core.dto.secrets.KerberosBaseConfigDTO;
 import io.harness.ng.core.dto.secrets.NTLMConfigDTO;
@@ -20,6 +23,7 @@ import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import java.util.List;
 
+@OwnedBy(CDP)
 @Singleton
 public class WinRmCredentialsSpecDTOHelper {
   @Inject private SecretManagerClientService secretManagerClientService;
