@@ -7,6 +7,7 @@
 
 package io.harness.template.helpers;
 
+import static io.harness.common.NGExpressionUtils.matchesInputSetPattern;
 import static io.harness.data.structure.EmptyPredicate.isEmpty;
 import static io.harness.data.structure.EmptyPredicate.isNotEmpty;
 import static io.harness.exception.WingsException.USER;
@@ -354,7 +355,7 @@ public class TemplateMergeHelper {
       Object value = mergedYamlConfigMap.get(key);
       if (!templateInputsYamlConfigMap.containsKey(key) && !(value instanceof ArrayNode)) {
         String mergedValue = ((JsonNode) value).asText();
-        if (!NGExpressionUtils.matchesInputSetPattern(mergedValue)) {
+        if (!matchesInputSetPattern(mergedValue)) {
           resMap.put(key, value);
         }
       } else {
@@ -435,24 +436,70 @@ public class TemplateMergeHelper {
       String fieldName = childYamlField.getName();
       JsonNode value = childYamlField.getNode().getCurrJsonNode();
       if (isTemplatePresent(fieldName, value)) {
-        function(accountId, orgId, projectId, value, templateCacheMap);
+        JsonNode updatedValue = function(accountId, orgId, projectId, value, templateCacheMap);
+        // put the updated value in the childyamlfield node
+        YamlNode updatedChildNode = new YamlNode(fieldName, updatedValue);
         continue;
       }
     }
-    return null;
+    return convertToYaml(yamlNode);
   }
 
-  private void function(
+  private JsonNode function(
       String accountId, String orgId, String projectId, JsonNode value, Map<String, TemplateEntity> templateCacheMap) {
-    JsonNode templateReference = value.get(TEMPLATE_REF);
-    JsonNode versionLabel = value.get(TEMPLATE_VERSION_LABEL);
     JsonNode templateInputs = value.get(TEMPLATE_INPUTS);
 
-    String templateIdentifier = templateReference.asText();
+    TemplateEntity templateEntity = getLinkedTemplateEntity(accountId, orgId, projectId, value, templateCacheMap);
+    String templateYaml = templateEntity.getYaml();
+    JsonNode templateSpec;
+    try {
+      NGTemplateConfig templateConfig = YamlPipelineUtils.read(templateYaml, NGTemplateConfig.class);
+      templateSpec = templateConfig.getTemplateInfoConfig().getSpec();
+    } catch (IOException e) {
+      log.error("Could not read template yaml", e);
+      throw new NGTemplateException("Could not read template yaml: " + e.getMessage());
+    }
+    YamlConfig yamlConfig = function2(templateInputs, templateSpec);
 
-    String templateInputsFromTemplatesYaml =
-        getTemplateInputs(accountId, orgId, projectId, templateIdentifier, versionLabel.asText());
-    String templateInputsFromPipelineYaml = templateInputs.asText();
+    ObjectNode updatedValue = (ObjectNode) value;
+    updatedValue.putPOJO(TEMPLATE_INPUTS, yamlConfig);
+    return updatedValue;
+  }
+
+  private YamlConfig function2(JsonNode templateInputs, JsonNode templateSpec) {
+    Map<String, JsonNode> dummyTemplateSpecMap = new LinkedHashMap<>();
+    dummyTemplateSpecMap.put(DUMMY_NODE, templateSpec);
+    String dummyTemplateSpecYaml = convertToYaml(dummyTemplateSpecMap);
+
+    String templateSpecYaml = RuntimeInputFormHelper.createTemplateFromYaml(dummyTemplateSpecYaml);
+
+    Map<String, JsonNode> dummyTemplateInputsMap = new LinkedHashMap<>();
+    dummyTemplateInputsMap.put(DUMMY_NODE, templateInputs);
+    String dummyTemplateInputsYaml = convertToYaml(dummyTemplateInputsMap);
+
+    Map<FQN, Object> templateSpecMap = function3(dummyTemplateInputsYaml, templateSpecYaml);
+    YamlConfig yamlConfig = new YamlConfig(templateSpecMap, templateSpec);
+    return yamlConfig;
+  }
+
+  private Map<FQN, Object> function3(String originalYaml, String templateSpecYaml) {
+    YamlConfig templateSpecConfig = new YamlConfig(templateSpecYaml);
+    Map<FQN, Object> templateSpecMap = templateSpecConfig.getFqnToValueMap();
+
+    YamlConfig originalYamlConfig = new YamlConfig(originalYaml);
+    Map<FQN, Object> originalYamlFQNMap = new LinkedHashMap<>(originalYamlConfig.getFqnToValueMap());
+
+    templateSpecConfig.getFqnToValueMap().keySet().forEach(key -> {
+      if (originalYamlFQNMap.containsKey(key)) {
+        Object value = originalYamlFQNMap.get(key);
+        if (matchesInputSetPattern(templateSpecMap.get(key).toString())) {
+          templateSpecMap.replace(key, value);
+        }
+      } else {
+        // do nothing. key,value already present in the template spec.
+      }
+    });
+    return templateSpecMap;
   }
 
   private Object validateTemplateInputsInArray(String accountId, String orgId, String projectId, YamlNode yamlNode,
