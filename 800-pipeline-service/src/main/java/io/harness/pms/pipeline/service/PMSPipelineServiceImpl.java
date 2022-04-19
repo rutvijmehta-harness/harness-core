@@ -373,12 +373,6 @@ public class PMSPipelineServiceImpl implements PMSPipelineService {
     return pmsPipelineRepository.findAll(criteria, pageable, accountId, orgIdentifier, projectIdentifier, false);
   }
 
-  public GovernanceMetadata validatePipelineYamlAndSetTemplateRefIfAny(PipelineEntity pipelineEntity) {
-    boolean isGovernanceEnabled =
-        pmsFeatureFlagService.isEnabled(pipelineEntity.getAccountId(), FeatureName.OPA_PIPELINE_GOVERNANCE);
-    return validatePipelineYamlAndSetTemplateRefIfAny(pipelineEntity, isGovernanceEnabled);
-  }
-
   @Override
   public GovernanceMetadata validatePipelineYamlAndSetTemplateRefIfAny(
       PipelineEntity pipelineEntity, boolean checkAgainstOPAPolicies) {

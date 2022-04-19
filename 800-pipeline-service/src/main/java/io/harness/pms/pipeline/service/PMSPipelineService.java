@@ -60,8 +60,6 @@ public interface PMSPipelineService {
   Page<PipelineEntity> list(Criteria criteria, Pageable pageable, String accountId, String orgIdentifier,
       String projectIdentifier, Boolean getDistinctFromBranches);
 
-  GovernanceMetadata validatePipelineYamlAndSetTemplateRefIfAny(PipelineEntity pipelineEntity);
-
   GovernanceMetadata validatePipelineYamlAndSetTemplateRefIfAny(
       PipelineEntity pipelineEntity, boolean checkAgainstOPAPolicies);
 
