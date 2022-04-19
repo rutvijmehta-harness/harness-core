@@ -9,8 +9,11 @@ package io.harness.cf;
 
 import static io.harness.data.structure.EmptyPredicate.isEmpty;
 
+import io.harness.cf.client.api.BaseConfig;
 import io.harness.cf.client.api.CfClient;
 import io.harness.cf.client.api.Config;
+import io.harness.cf.client.connector.HarnessConfig;
+import io.harness.cf.client.connector.HarnessConnector;
 import io.harness.cf.openapi.ApiClient;
 
 import com.google.inject.AbstractModule;
@@ -46,39 +49,25 @@ public class CfClientModule extends AbstractModule {
       apiKey = "fake";
     }
 
-    final Config config = Config.builder()
-                              .analyticsEnabled(cfClientConfig.isAnalyticsEnabled())
-                              .configUrl(cfClientConfig.getConfigUrl())
-                              .eventUrl(cfClientConfig.getEventUrl())
-                              .readTimeout(cfClientConfig.getReadTimeout())
-                              .connectionTimeout(cfClientConfig.getConnectionTimeout())
-                              .build();
+    HarnessConfig harnessConfig =
+            HarnessConfig.builder()
+                    .configUrl(cfClientConfig.getConfigUrl())
+                    .eventUrl(cfClientConfig.getEventUrl())
+                    .connectionTimeout(cfClientConfig.getConnectionTimeout())
+                    .readTimeout(cfClientConfig.getReadTimeout())
+                    .build();
 
-    final CfClient client = new CfClient(apiKey, config);
+    final HarnessConnector harnessConnector = new HarnessConnector(cfClientConfig.getApiKey(), harnessConfig);
 
-    final IntervalFunction function = IntervalFunction.ofExponentialBackoff(
+    final BaseConfig config = BaseConfig.builder()
+            .analyticsEnabled(cfClientConfig.isAnalyticsEnabled())
+            .build();
 
-        cfClientConfig.getSleepInterval(), 2);
-
-    final RetryConfig retryConfig = RetryConfig.custom()
-                                        .maxAttempts(cfClientConfig.getRetries())
-                                        .intervalFunction(function)
-                                        .retryOnResult(
-
-                                            r -> !((Boolean) r))
-                                        .build();
-
-    final RetryRegistry registry = RetryRegistry.of(retryConfig);
-    final Retry retry = registry.retry("cfClientInit", retryConfig);
-
-    final Supplier<Boolean> retrySupplier = Retry.decorateSupplier(
-
-        retry, client::isInitialized);
-
-    if (retrySupplier.get()) {
-      log.info("CF client has been initialized");
-    } else {
-      log.error("CF client has not been initialized");
+    final CfClient client = new CfClient(harnessConnector, config);
+    try {
+      client.waitForInitialization();
+    } catch (Exception e) {
+      return null;
     }
 
     return client;
