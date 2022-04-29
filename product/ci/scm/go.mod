@@ -6,6 +6,8 @@ replace github.com/harness/harness-core/commons/go/lib => ../../../commons/go/li
 
 replace github.com/harness/harness-core/product/log-service => ../../../product/log-service
 
+replace github.com/harness/harness-core/product/ci/scm => github.com/rutvijmehta-harness/harness-core/product/ci/scm
+
 require (
 	github.com/alexflint/go-arg v1.3.0
 	github.com/drone/go-scm v1.20.1-0.20220404090931-cc4578ad43c3
