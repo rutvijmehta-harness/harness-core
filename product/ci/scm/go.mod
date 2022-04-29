@@ -1,4 +1,4 @@
-module github.com/harness/harness-core/product/ci/scm
+module github.com/rutvijmehta-harness/harness-core/product/ci/scm
 
 go 1.14
 
