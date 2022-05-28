@@ -99,7 +99,7 @@ public class CIPipelineEndEventHandler implements OrchestrationEventHandler {
     String orgIdentifier = AmbianceUtils.getOrgIdentifier(ambiance);
     String projectIdentifier = AmbianceUtils.getProjectIdentifier(ambiance);
     String accountId = AmbianceUtils.getAccountId(ambiance);
-
+    // test comment
     return BaseNGAccess.builder()
         .accountIdentifier(accountId)
         .orgIdentifier(orgIdentifier)
